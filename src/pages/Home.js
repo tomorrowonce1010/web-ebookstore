@@ -6,7 +6,6 @@ import { bookApi } from '../services/api';
 const { Search } = Input;
 
 export default function Home() {
-  const [searchText, setSearchText] = useState('');
   const [displayBooks, setDisplayBooks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -82,7 +81,6 @@ export default function Home() {
           allowClear
           enterButton="搜索"
           size="large"
-          onChange={(e) => setSearchText(e.target.value)}
           onSearch={handleSearch}
           style={{ maxWidth: '500px' }}
           loading={loading}

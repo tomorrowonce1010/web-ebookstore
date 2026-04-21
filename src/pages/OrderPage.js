@@ -1,11 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Typography, Empty, Spin, Card, Input, DatePicker, Button, Space, message } from 'antd';
+import { Table, Empty, Spin, Card, Input, DatePicker, Button, Space, message } from 'antd';
 import { SearchOutlined, ReloadOutlined } from '@ant-design/icons';
 import { orderApi } from '../services/api';
-import { Link } from 'react-router-dom';
 import dayjs from 'dayjs';
-
-const { Title } = Typography;
 const { RangePicker } = DatePicker;
 
 export default function OrderPage() {

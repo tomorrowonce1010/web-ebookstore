@@ -1,70 +1,407 @@
-# Getting Started with Create React App
+# 在线书店系统需求说明文档
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+**项目名称**：在线书店系统  
+**适用课程**：互联网应用开发技术  
+**文档性质**：课程大作业需求说明文档  
+**版本**：V1.0  
+**编写日期**：2026-04-20
 
-## Available Scripts
+## 1. 引言
 
-In the project directory, you can run:
+### 1.1 项目背景
 
-### `npm start`
+本项目为"互联网应用开发技术"课程大作业，目标是设计并实现一个前后端分离的在线书店系统。系统需要覆盖普通用户与管理员两类角色的核心业务，并通过React、React Router、Ant Design、SpringBoot、MySQL等技术完成前端页面、后端服务、数据库持久化及前后端异步通信。
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### 1.2 术语说明
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- **顾客**：普通用户，可注册、登录、浏览图书、加入购物车、下订单、查看个人订单与个人统计信息。
+- **管理员**：具备后台管理权限的用户，可进行用户管理、书籍管理、订单管理及统计分析。
+- **购物车**：用户待购买图书的临时存储集合，数据需具备持久化能力。
+- **订单**：用户提交购买行为后生成的交易记录。
+- **前后端分离**：前端通过Ajax/fetch API向后端发送请求，由后端访问数据库并返回JSON数据。
 
-### `npm test`
+## 2. 项目总体说明
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### 2.1 项目目标
 
-### `npm run build`
+建设一个具有实际电子商务网站基本能力的在线书店系统，满足以下目标：
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+1. 实现前后端贯通，所有前端展示数据来源于后端数据库。
+2. 实现用户、书籍、购物车、订单、统计等核心业务。
+3. 完成普通用户全部基础功能。
+4. 至少完成一项管理员功能，并在较高完成度下实现后台管理能力。
+5. 体现合理的软件工程结构，包括前端模块化、后端分层架构、数据库规范设计与ORM/JDBC访问机制。
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### 2.2 建设范围
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+本系统主要包括以下业务模块：
 
-### `npm run eject`
+- 用户注册与登录
+- 登录状态校验与会话管理
+- 用户管理
+- 图书浏览与图书详情
+- 图书搜索
+- 购物车管理
+- 下订单
+- 订单查询与过滤
+- 管理员书籍管理
+- 管理员订单管理
+- 统计分析
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### 2.3 角色划分
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+系统包含两类角色：
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+- 顾客
+- 管理员
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+不同角色登录后看到的功能界面和可执行操作不同。
 
-## Learn More
+## 3. 总体技术要求
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### 3.1 前端技术要求
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+前端工程需满足以下要求：
 
-### Code Splitting
+- 使用 React 开发
+- 使用 React Router 管理页面路由与跳转
+- 使用 Ant Design 构建页面 UI
+- 使用 fetch API 实现前后端异步通信
+- 项目结构建议按 Component、View、Service、Util 等模块组织
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+### 3.2 后端技术要求
 
-### Analyzing the Bundle Size
+后端工程需满足以下要求：
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+- 使用 Spring Boot 开发
+- 数据访问使用 Spring Data JDBC 或 Spring JPA
+- 第三次迭代重点体现分层架构与接口和实现分离
+- 通过 Spring 依赖注入管理对象依赖关系
+- 使用 Session 记录登录状态并完成拦截校验
 
-### Making a Progressive Web App
+### 3.3 数据库要求
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+- 使用 MySQL 关系型数据库
+- 数据库结构合理，表关系正确
+- 重要实体之间需要建立清晰关联，如：
+  - User 与 UserAuth
+  - Order 与 OrderItem
+  - User 与 CartItem
+  - Book 与 OrderItem
+- 表结构设计需考虑字段类型、长度、约束、主外键及范式要求
 
-### Advanced Configuration
+### 3.4 通信要求
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+- 前后端采用 Ajax 异步通信
+- 数据交换格式统一为 JSON
+- 所有核心业务数据由后端访问数据库后返回前端
+- 用户操作结果需同步反映到数据库中
 
-### Deployment
+## 4. 业务流程概述
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+### 4.1 顾客核心业务流程
 
-### `npm run build` fails to minify
+注册/登录 → 浏览图书列表 → 搜索图书 → 查看图书详情 → 加入购物车 → 浏览购物车 → 提交订单 → 查看个人订单 → 查看个人消费统计
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+### 4.2 管理员核心业务流程
+
+管理员登录 → 进入后台管理界面 → 用户管理/书籍管理/订单管理/统计分析 → 更新数据库内容 → 前端刷新并显示变更结果
+
+## 5. 功能需求
+
+### 5.1 用户注册与登录模块
+
+#### 5.1.1 用户注册
+
+注册信息包含：用户名、密码、重复密码、邮箱
+
+系统应完成以下校验：
+
+1. 用户名不能为空
+2. 用户名不能重复
+3. 两次输入密码必须一致
+4. 邮箱格式必须合法
+
+注册成功后，应将用户信息写入数据库。
+
+#### 5.1.2 用户登录
+
+系统应支持用户通过用户名和密码登录。登录时：
+
+1. 用户必须输入用户名和密码
+2. 后端需校验数据库中的账号密码
+3. 登录成功后，系统需识别用户角色为顾客或管理员
+4. 不同角色登录后应进入不同的功能界面
+
+#### 5.1.3 被禁用用户限制
+
+若用户被管理员禁用，则该用户无法登录系统，并提示"您的账号已经被禁用"。
+
+#### 5.1.4 登录状态检查
+
+系统需在后端 Session 中记录用户登录信息。除登录接口外，其余受保护接口在访问时都需要进行登录状态检查；未登录用户应被拦截并重定向至登录页面或返回未登录状态信息供前端跳转。
+
+#### 5.1.5 密码安全要求
+
+系统在实现登录与注册时，应说明密码安全保护思路，包括但不限于：
+
+- 不明文存储密码
+- 密码应加密或哈希存储
+- 需说明当前方案的安全风险与可改进方向
+
+### 5.2 用户管理模块（管理员）
+
+管理员登录后应具备用户管理能力，包括：
+
+1. 查看用户列表
+2. 区分用户角色
+3. 禁用指定用户
+4. 解禁指定用户
+
+被禁用用户的状态应持久化保存在数据库中，并在后续登录校验中生效。
+
+### 5.3 图书浏览模块
+
+#### 5.3.1 图书列表展示
+
+顾客和管理员都可以浏览数据库中的图书列表。列表至少应展示以下字段：
+
+- 书名
+- 作者
+- 封面
+- ISBN 编号
+- 库存量
+
+#### 5.3.2 图书搜索
+
+系统应提供基于书名的搜索/过滤功能，便于用户快速定位图书。
+
+#### 5.3.3 图书详情
+
+用户点击某本图书后，系统应通过异步请求获取并展示图书详细信息，包括但不限于：
+
+- 封面
+- 书名
+- 作者
+- 简介
+- 定价
+- 库存
+- 出版社
+
+### 5.4 书籍管理模块（管理员）
+
+管理员登录后可进入书籍管理模块，具备以下功能：
+
+1. 浏览数据库中的书籍信息
+2. 按书名搜索图书
+3. 修改图书属性，包括书名、作者、封面、ISBN、库存量等
+4. 删除旧图书
+5. 添加新图书
+
+上述操作完成后，数据库中的图书信息应同步更新，并能被前端实时展示。
+
+### 5.5 购物车模块
+
+#### 5.5.1 加入购物车
+
+当用户浏览图书详情时，可将图书加入购物车。
+
+#### 5.5.2 查看购物车
+
+用户可查看自己尚未下单的购物车内容，页面应显示已加入的图书及其相关信息。
+
+#### 5.5.3 购物车持久化
+
+购物车信息建议存储在数据库中，以保证用户退出登录后再次登录时，购物车信息仍然存在。
+
+### 5.6 下订单模块
+
+#### 5.6.1 提交订单
+
+用户在购物车页面点击购买后，系统应：
+
+1. 校验购物车内容
+2. 生成订单
+3. 生成订单明细
+4. 扣减对应图书库存
+5. 清空购物车
+
+#### 5.6.2 订单持久化
+
+订单及订单明细必须写入数据库，确保后续可查询和统计。
+
+#### 5.6.3 下单结果展示
+
+订单生成后，应将订单结果返回前端展示给用户。
+
+### 5.7 订单管理模块
+
+#### 5.7.1 顾客订单查询
+
+顾客可以查看自己的全部订单。
+
+#### 5.7.2 管理员订单查询
+
+管理员可以查看系统中所有用户的订单。
+
+#### 5.7.3 订单过滤
+
+订单查询应支持以下过滤方式：
+
+- 按时间范围过滤
+- 按书籍名称过滤
+- 时间范围与书籍名称组合过滤
+
+### 5.8 统计模块
+
+#### 5.8.1 管理员销量统计
+
+管理员可在指定时间范围内统计各类图书销量，并按销售量排序，以图表或表格方式展示热销榜。
+
+#### 5.8.2 管理员消费统计
+
+管理员可在指定时间范围内统计各用户累计消费金额，并按总金额排序，形成消费榜。
+
+#### 5.8.3 顾客个人统计
+
+顾客可在指定时间范围内查看自己的购书情况，包括：
+
+- 每种书购买数量
+- 购书总本数
+- 购书总金额
+
+## 6. 非功能需求
+
+### 6.1 界面与用户体验要求
+
+1. 界面应符合一般电子商务网站的操作习惯
+2. 页面应具有较好的可读性与一致性
+3. 路由跳转逻辑清晰
+4. 使用 Ant Design 提升界面规范性与维护性
+
+### 6.2 架构与可维护性要求
+
+1. 前端应体现组件化开发思想
+2. 后端应体现控制层、服务层、数据访问层、实体层等分层结构
+3. 业务逻辑不得全部堆积在 Controller 中
+4. 后端应体现接口与实现分离原则
+5. 通过 Spring 依赖注入降低耦合度
+
+### 6.3 数据一致性要求
+
+1. 图书库存、购物车、订单之间的数据变更必须一致
+2. 下单后订单、订单明细、库存扣减、购物车清空需形成完整闭环
+3. 前端展示结果应与数据库状态一致
+
+### 6.4 安全性要求
+
+1. 用户密码不得以明文方式直接保存
+2. 非登录用户不得访问受保护资源
+3. 被禁用用户不得继续登录
+4. 管理员功能必须与普通用户功能隔离
+
+## 7. 数据库需求
+
+### 7.1 数据库设计原则
+
+数据库设计需满足以下原则：
+
+1. 表结构合理，避免冗余与更新异常
+2. 主键设计清晰，字段类型选择合理
+3. 建立正确的外键关系
+4. 设计时考虑函数依赖、无损分解和范式要求
+5. 便于后续 ORM/JPA 映射与业务扩展
+
+### 7.2 建议核心实体
+
+建议系统至少包含以下实体：
+
+- **User**：用户基本信息
+- **UserAuth**：用户认证信息
+- **Book**：图书信息
+- **CartItem**：购物车项
+- **Order**：订单主表
+- **OrderItem**：订单明细表
+
+### 7.3 关键关系说明
+
+1. User 与 UserAuth：一对一关系
+2. User 与 CartItem：一对多关系
+3. User 与 Order：一对多关系
+4. Order 与 OrderItem：一对多关系
+5. Book 与 OrderItem：一对多关系
+6. Book 与 CartItem：一对多关系
+
+### 7.4 数据库设计说明要求
+
+项目答辩时需能够说明：
+
+- 主键类型选择依据
+- 字段类型与长度设计依据
+- 非空、唯一、外键等约束的设置原因
+- 表之间关联方式与 cascade 设置原因
+- 数据库规范化依据及是否满足相应范式
+
+## 8. 系统架构需求
+
+### 8.1 前端架构要求
+
+建议前端按照以下思路组织：
+
+- **View/Page**：页面级组件
+- **Component**：可复用 UI 组件
+- **Service**：封装 API 请求
+
+前端所有动态数据均应通过接口调用获取，不允许关键业务数据长期写死在页面中。
+
+### 8.2 后端架构要求
+
+后端至少应包含以下层次：
+
+- **Controller层**：接收请求，返回响应
+- **Service层**：处理业务逻辑
+- **DAO/Repository层**：处理数据库访问
+- **Entity层**：数据库实体抽象
+- **DTO层**：封装对外返回数据，屏蔽底层细节
+
+### 8.3 接口与实现分离要求
+
+服务层应尽量采用接口与实现类分离方式，以提升：
+
+- 可维护性
+- 可测试性
+- 可扩展性
+- 依赖注入灵活性
+
+## 9. 前后端接口需求
+
+### 9.1 数据交换格式
+
+前后端统一采用 JSON 传输数据。
+
+### 9.2 通信方式
+
+前端通过 fetch API 以 Ajax 异步请求方式调用后端接口。
+
+### 9.3 接口基本范围
+
+系统应至少具备以下接口类别：
+
+- 登录/注册接口
+- 用户信息与状态校验接口
+- 图书列表接口
+- 图书详情接口
+- 购物车增删查改接口
+- 下单接口
+- 订单查询接口
+- 管理员用户管理接口
+- 管理员书籍管理接口
+- 管理员订单管理接口
+- 统计接口
+
+### 9.4 接口设计原则
+
+1. 请求与响应语义清晰
+2. 返回数据结构统一
+3. 错误信息可识别
+4. 支持前端页面按接口结果动态刷新

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
     Table, 
     Button, 
@@ -14,8 +14,7 @@ import {
 } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, StockOutlined } from '@ant-design/icons';
 import { adminBookApi } from '../services/api';
-
-const API_BASE_URL = 'http://localhost:8080/api';
+import API_BASE_URL from '../services/config';
 
 const AdminBookPage = () => {
     const [books, setBooks] = useState([]);
@@ -34,7 +33,7 @@ const AdminBookPage = () => {
     });
 
     // 获取书籍列表
-    const fetchBooks = useCallback(async (page = pagination.current, pageSize = pagination.pageSize) => {
+    const fetchBooks = async (page = 1, pageSize = 10) => {
         setLoading(true);
         try {
             const response = await fetch(`${API_BASE_URL}/admin/books?page=${page - 1}&size=${pageSize}`, {
@@ -59,7 +58,7 @@ const AdminBookPage = () => {
         } finally {
             setLoading(false);
         }
-    }, [pagination.current, pagination.pageSize]);
+    };
 
     // 搜索书籍
     const searchBooks = async (keyword) => {
@@ -220,7 +219,7 @@ const AdminBookPage = () => {
 
     useEffect(() => {
         fetchBooks();
-    }, [fetchBooks]);
+    }, []);
 
     const columns = [
         {

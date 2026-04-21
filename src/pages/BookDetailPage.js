@@ -1,64 +1,57 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Row, Col, Button, InputNumber, Descriptions, Spin, Alert, message, Tag } from 'antd';
 import { CartContext } from '../contexts/CartContext';
-import {Row, Col, Button, InputNumber, Descriptions, Modal, Spin, Alert, message, Tag} from 'antd';
-import {bookApi} from '../services/api';
+import { bookApi } from '../services/api';
 
 export default function BookDetailPage() {
-  // 使用自定义Hook获取路由参数
   const { id } = useParams();
   const navigate = useNavigate();
-  
-  // 使用Context消费全局状态
   const { addToCart, directPurchase } = useContext(CartContext);
-  
-  // 状态管理组件内部数据
+
   const [book, setBook] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // 加载书籍详情
-  useEffect(() => {
-    fetchBookDetail();
-  }, [id]);
-
-  // 从API获取书籍详情
-  const fetchBookDetail = async () => {
+  const fetchBookDetail = useCallback(async () => {
     try {
       setLoading(true);
       const response = await bookApi.getBook(id);
-      
+
       if (response && response.success) {
         setBook(response.data);
         setError(null);
-      } else {
-        throw new Error(response.message || '获取书籍详情失败');
+        return;
       }
+
+      throw new Error(response.message || '获取图书详情失败');
     } catch (err) {
-      console.error('获取书籍详情失败:', err);
-      setError('获取书籍详情失败，请稍后再试');
-      
-      // 使用本地数据作为备份
-      import('../data').then(({ books }) => {
-        const foundBook = books.find(b => b.id === parseInt(id));
-        if (foundBook) {
-          setBook(foundBook);
-        } else {
-          setError('未找到该书籍');
-        }
-      });
+      console.error('获取图书详情失败:', err);
+      setError('获取图书详情失败，请稍后再试');
+
+      const { books } = await import('../data');
+      const foundBook = books.find((item) => item.id === Number(id));
+
+      if (foundBook) {
+        setBook(foundBook);
+      } else {
+        setError('未找到该图书');
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
-  // 事件处理函数
+  useEffect(() => {
+    fetchBookDetail();
+  }, [fetchBookDetail]);
+
   const handleBuyNow = async () => {
     try {
       setLoading(true);
       await directPurchase(book, quantity);
-      message.success('购买成功！');
+      message.success('购买成功');
     } catch (err) {
       console.error('购买失败:', err);
       message.error(err.message || '购买失败，请稍后再试');
@@ -71,7 +64,7 @@ export default function BookDetailPage() {
     try {
       setLoading(true);
       await addToCart(book, quantity);
-      message.success('已添加到购物车！');
+      message.success('已添加到购物车');
     } catch (err) {
       console.error('添加到购物车失败:', err);
       message.error(err.message || '添加到购物车失败，请稍后再试');
@@ -79,15 +72,14 @@ export default function BookDetailPage() {
       setLoading(false);
     }
   };
-  
+
   const handleBackToHome = () => {
     navigate('/');
   };
 
-  // 检查是否售罄
-  const isOutOfStock = book?.status === 'OUT_OF_STOCK';
+  const isOutOfStock = book?.status === 'OUT_OF_STOCK' || Number(book?.stock) === 0;
 
-  if (loading) {
+  if (loading && !book) {
     return (
       <div style={{ textAlign: 'center', margin: '100px 0' }}>
         <Spin size="large" />
@@ -113,7 +105,9 @@ export default function BookDetailPage() {
     );
   }
 
-  if (!book) return null;
+  if (!book) {
+    return null;
+  }
 
   return (
     <div style={{ padding: '24px' }}>
@@ -131,28 +125,35 @@ export default function BookDetailPage() {
             }}
           />
           {isOutOfStock && (
-            <Tag color="error" style={{
-              position: 'absolute',
-              top: '10px',
-              right: '10px',
-              fontSize: '14px'
-            }}>
+            <Tag
+              color="error"
+              style={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+                fontSize: '14px'
+              }}
+            >
               售罄
             </Tag>
           )}
         </Col>
         <Col span={12}>
-          <h1 style={{ 
-            fontSize: '24px', 
-            marginBottom: '16px',
-            color: isOutOfStock ? '#999' : 'inherit'
-          }}>
+          <h1
+            style={{
+              fontSize: '24px',
+              marginBottom: '16px',
+              color: isOutOfStock ? '#999' : 'inherit'
+            }}
+          >
             {book.title}
           </h1>
-          <p style={{ 
-            color: isOutOfStock ? '#999' : '#666', 
-            marginBottom: '24px' 
-          }}>
+          <p
+            style={{
+              color: isOutOfStock ? '#999' : '#666',
+              marginBottom: '24px'
+            }}
+          >
             {book.description}
           </p>
 
@@ -160,32 +161,31 @@ export default function BookDetailPage() {
             <Descriptions.Item label="作者">{book.author}</Descriptions.Item>
             <Descriptions.Item label="价格">￥{book.price}</Descriptions.Item>
             <Descriptions.Item label="库存数量">
-              {book.stock > 0 ? (
-                <span style={{ color: book.stock <= 10 ? '#ff7875' : '#52c41a' }}>
-                  {book.stock}本 {book.stock <= 10 && book.stock > 0 && '(库存较少)'}
+              {Number(book.stock) > 0 ? (
+                <span style={{ color: Number(book.stock) <= 10 ? '#ff7875' : '#52c41a' }}>
+                  {book.stock} 本
+                  {Number(book.stock) <= 10 ? '（库存较少）' : ''}
                 </span>
               ) : (
                 <Tag color="error">售罄</Tag>
               )}
             </Descriptions.Item>
-            {book.isbn && (
-              <Descriptions.Item label="ISBN">{book.isbn}</Descriptions.Item>
-            )}
+            {book.isbn && <Descriptions.Item label="ISBN">{book.isbn}</Descriptions.Item>}
           </Descriptions>
 
           <div style={{ margin: '24px 0' }}>
             <span style={{ marginRight: '16px' }}>数量：</span>
             <InputNumber
               min={1}
-              max={book.stock || 1}
+              max={Number(book.stock) || 1}
               value={quantity}
-              onChange={setQuantity}
+              onChange={(value) => setQuantity(value || 1)}
               style={{ width: '100px' }}
               disabled={isOutOfStock}
             />
-            {book.stock > 0 && (
+            {Number(book.stock) > 0 && (
               <span style={{ marginLeft: '8px', color: '#666', fontSize: '12px' }}>
-                (最多可购买{book.stock}本)
+                （最多可购买 {book.stock} 本）
               </span>
             )}
           </div>
@@ -198,7 +198,6 @@ export default function BookDetailPage() {
               onClick={handleAddToCart}
               loading={loading}
               disabled={isOutOfStock}
-              title={isOutOfStock ? "商品已售罄" : ""}
             >
               加入购物车
             </Button>
@@ -209,7 +208,6 @@ export default function BookDetailPage() {
               onClick={handleBuyNow}
               loading={loading}
               disabled={isOutOfStock}
-              title={isOutOfStock ? "商品已售罄" : ""}
             >
               立即购买
             </Button>

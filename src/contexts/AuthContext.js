@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { Spin } from 'antd';
 import authService from '../services/authService';
 
 const AuthContext = createContext(null);
@@ -50,7 +51,18 @@ export const AuthProvider = ({ children }) => {
   const isAdmin = user && user.role === 'ADMIN';
 
   if (loading) {
-    return null; // 或者返回加载组件
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+      >
+        <Spin size="large" tip="正在检查登录状态..." />
+      </div>
+    );
   }
 
   return (

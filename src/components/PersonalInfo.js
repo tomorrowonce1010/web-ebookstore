@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Form, Input, Button, Row, Col, Card, message, Spin } from 'antd';
 import { userApi } from '../services/api';
 import authService from '../services/authService';
@@ -9,49 +9,36 @@ export default function PersonalInfo() {
   const [submitting, setSubmitting] = useState(false);
   const [initialValues, setInitialValues] = useState(null);
 
-  // 组件加载时获取用户信息
-  //处理副作用，如数据获取、订阅、手动修改DOM等
-  useEffect(() => {
-    fetchUserInfo();
-  }, []);
-
-  // 从后端获取用户信息
-  const fetchUserInfo = async () => {
+  const fetchUserInfo = useCallback(async () => {
     try {
       setLoading(true);
       const response = await userApi.getUserInfo();
-      
+
       if (response && response.success) {
         const userInfo = response.data;
-        // 设置初始值
-        setInitialValues({
+        const values = {
           username: authService.getCurrentUser()?.username || '',
-          name: userInfo.name,
-          email: userInfo.email,
-          address: userInfo.address
-        });
-        // 设置表单值
-        form.setFieldsValue({
-          username: authService.getCurrentUser()?.username || '',
-          name: userInfo.name,
-          email: userInfo.email,
-          address: userInfo.address
-        });
+          name: userInfo.name || '',
+          email: userInfo.email || '',
+          address: userInfo.address || ''
+        };
+
+        setInitialValues(values);
+        form.setFieldsValue(values);
       } else {
         throw new Error(response.message || '获取用户信息失败');
       }
     } catch (err) {
       console.error('获取用户信息失败:', err);
       message.error('获取用户信息失败，请稍后再试');
-      
-      // 如果后端获取失败，尝试使用本地存储的信息
+
       const localUserInfo = authService.getCurrentUser();
       if (localUserInfo) {
         const values = {
-          username: localUserInfo.username,
-          name: localUserInfo.name,
-          email: localUserInfo.email,
-          address: localUserInfo.address
+          username: localUserInfo.username || '',
+          name: localUserInfo.name || '',
+          email: localUserInfo.email || '',
+          address: localUserInfo.address || ''
         };
         setInitialValues(values);
         form.setFieldsValue(values);
@@ -59,13 +46,15 @@ export default function PersonalInfo() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [form]);
 
-  // 提交用户信息
+  useEffect(() => {
+    fetchUserInfo();
+  }, [fetchUserInfo]);
+
   const onFinish = async (values) => {
-    // 检查是否有实际修改
-    const hasChanges = Object.keys(values).some(key => 
-      values[key] !== initialValues[key] && key !== 'username'
+    const hasChanges = Object.keys(values).some(
+      (key) => key !== 'username' && values[key] !== initialValues?.[key]
     );
 
     if (!hasChanges) {
@@ -75,28 +64,23 @@ export default function PersonalInfo() {
 
     try {
       setSubmitting(true);
-      
-      // 调用后端API更新用户信息
       const response = await userApi.updateUserInfo({
         name: values.name,
         email: values.email,
         address: values.address
       });
-      
+
       if (response && response.success) {
-        // 更新本地存储的用户信息
         const currentUser = authService.getCurrentUser();
         if (currentUser) {
-          const updatedUser = {
+          authService.setCurrentUser({
             ...currentUser,
             name: values.name,
             email: values.email,
             address: values.address
-          };
-          authService.setCurrentUser(updatedUser);
+          });
         }
-        
-        // 更新初始值
+
         setInitialValues(values);
         message.success('用户信息更新成功');
       } else {
@@ -104,13 +88,12 @@ export default function PersonalInfo() {
       }
     } catch (err) {
       console.error('保存用户信息失败:', err);
-      message.error('保存失败: ' + (err.message || '请稍后再试'));
+      message.error(`保存失败: ${err.message || '请稍后再试'}`);
     } finally {
       setSubmitting(false);
     }
   };
 
-  // 重置表单
   const handleReset = () => {
     if (initialValues) {
       form.setFieldsValue(initialValues);
@@ -137,10 +120,7 @@ export default function PersonalInfo() {
         <Card title="基本信息" bordered={false} style={{ marginBottom: '24px' }}>
           <Row gutter={24}>
             <Col span={12}>
-              <Form.Item
-                name="username"
-                label="用户名"
-              >
+              <Form.Item name="username" label="用户名">
                 <Input disabled />
               </Form.Item>
             </Col>
@@ -171,7 +151,7 @@ export default function PersonalInfo() {
         </Card>
 
         <Card title="地址信息" bordered={false} style={{ marginBottom: '24px' }}>
-          <Form.Item 
+          <Form.Item
             name="address"
             label="地址"
             rules={[{ required: true, message: '请输入地址' }]}

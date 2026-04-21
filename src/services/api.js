@@ -1,5 +1,5 @@
 // API基础URL
-const API_BASE_URL = 'http://localhost:8080/api';
+import API_BASE_URL from './config';
 
 // 通用请求处理函数
 async function request(url, options = {}) {
