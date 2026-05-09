@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserServiceImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ebookstore-backend</a> &gt; <a href="index.source.html" class="el_package">com.ebookstore.service.impl</a> &gt; <span class="el_source">UserServiceImpl.java</span></div><h1>UserServiceImpl.java</h1><pre class="source lang-java linenums">package com.ebookstore.service.impl;
+
+import com.ebookstore.dto.UserDTO;
+import com.ebookstore.dto.UserListDTO;
+import com.ebookstore.entity.User;
+import com.ebookstore.entity.UserAuth;
+import com.ebookstore.repository.UserRepository;
+import com.ebookstore.repository.UserAuthRepository;
+import com.ebookstore.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import com.ebookstore.dto.UserInfoDTO;
+import com.ebookstore.service.AuthService;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+import javax.servlet.http.HttpSession;
+
+import javax.persistence.EntityNotFoundException;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+<span class="fc" id="L24">public class UserServiceImpl implements UserService {</span>
+    
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private UserAuthRepository userAuthRepository;
+
+    @Autowired
+    private AuthService authService;
+
+    @Override
+    public User getUserById(Long id) {
+<span class="pc" id="L37">        return userRepository.findById(id)</span>
+<span class="pc" id="L38">                .orElseThrow(() -&gt; new EntityNotFoundException(&quot;User not found with id: &quot; + id));</span>
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List&lt;UserListDTO&gt; getAllUsers() {
+<span class="fc" id="L44">        return userRepository.findAll().stream()</span>
+<span class="fc" id="L45">                .map(this::convertToUserListDTO)</span>
+<span class="fc" id="L46">                .collect(Collectors.toList());</span>
+    }
+
+    @Override
+    @Transactional
+    public void toggleUserStatus(Long userId) {
+        //通过userID查找用户认证信息
+<span class="fc" id="L53">        UserAuth userAuth = userAuthRepository.findByUserId(userId)</span>
+<span class="fc" id="L54">                .orElseThrow(() -&gt; new EntityNotFoundException(&quot;User not found with id: &quot; + userId));</span>
+        //翻转用户活跃状态
+<span class="pc bpc" id="L56" title="1 of 2 branches missed.">        userAuth.setActive(!userAuth.getActive());</span>
+<span class="fc" id="L57">        userAuthRepository.save(userAuth);</span>
+<span class="fc" id="L58">    }</span>
+
+    @Override
+    @Transactional(readOnly = true)
+    public List&lt;UserListDTO&gt; getTopSpenders(String startDate, String endDate) {
+        // 这里需要根据订单统计用户消费，暂时返回空列表
+        // 在完整实现中，需要关联订单表进行统计
+<span class="fc" id="L65">        return getAllUsers();</span>
+    }
+
+    @Override
+    public User getCurrentUser() {
+        try {
+            // 获取当前HTTP会话
+            ServletRequestAttributes attr = (ServletRequestAttributes)
+<span class="fc" id="L73">                    RequestContextHolder.currentRequestAttributes();</span>
+<span class="fc" id="L74">            HttpSession session = attr.getRequest().getSession(false);</span>
+
+<span class="pc bpc" id="L76" title="1 of 2 branches missed.">            if (session == null) {</span>
+<span class="nc" id="L77">                throw new RuntimeException(&quot;用户未登录&quot;);</span>
+            }
+
+            // 通过AuthService获取当前登录用户信息
+<span class="fc" id="L81">            UserInfoDTO currentUserInfo = authService.getCurrentUser(session);</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">            if (currentUserInfo == null) {</span>
+<span class="fc" id="L83">                throw new RuntimeException(&quot;用户未登录&quot;);</span>
+            }
+
+            // 根据用户ID获取用户实体
+<span class="fc" id="L87">            User user = userRepository.findById(currentUserInfo.getId())</span>
+<span class="fc" id="L88">                    .orElseThrow(() -&gt; new EntityNotFoundException(&quot;用户不存在&quot;));</span>
+
+<span class="fc" id="L90">            return user;</span>
+<span class="fc" id="L91">        } catch (Exception e) {</span>
+<span class="fc" id="L92">            throw new RuntimeException(&quot;获取当前用户失败: &quot; + e.getMessage());</span>
+        }
+    }
+    
+    @Override
+    public UserDTO getUserInfo() {
+<span class="fc" id="L98">        User user = getCurrentUser();</span>
+<span class="fc" id="L99">        return convertToDTO(user);</span>
+    }
+    
+    @Override
+    @Transactional
+    public UserDTO updateUserInfo(UserDTO userDTO) {
+<span class="fc" id="L105">        User user = getCurrentUser();</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">        if (user == null) {</span>
+<span class="nc" id="L107">            throw new EntityNotFoundException(&quot;Current user not found&quot;);</span>
+        }
+
+<span class="fc" id="L110">        user.setName(userDTO.getName());</span>
+<span class="fc" id="L111">        user.setEmail(userDTO.getEmail());</span>
+<span class="fc" id="L112">        user.setPhone(userDTO.getPhone());</span>
+<span class="fc" id="L113">        user.setAddress(userDTO.getAddress());</span>
+
+<span class="fc" id="L115">        user = userRepository.save(user);</span>
+<span class="fc" id="L116">        return convertToUserDTO(user);</span>
+    }
+    
+    private UserDTO convertToUserDTO(User user) {
+<span class="fc" id="L120">        UserDTO dto = new UserDTO();</span>
+<span class="fc" id="L121">        dto.setId(user.getId());</span>
+<span class="fc" id="L122">        dto.setName(user.getName());</span>
+<span class="fc" id="L123">        dto.setEmail(user.getEmail());</span>
+<span class="fc" id="L124">        dto.setPhone(user.getPhone());</span>
+<span class="fc" id="L125">        dto.setAddress(user.getAddress());</span>
+<span class="fc" id="L126">        return dto;</span>
+    }
+
+    private UserDTO convertToDTO(User user) {
+<span class="fc" id="L130">        return new UserDTO(</span>
+<span class="fc" id="L131">                user.getId(),</span>
+<span class="fc" id="L132">                user.getName(),</span>
+<span class="fc" id="L133">                user.getEmail(),</span>
+<span class="fc" id="L134">                user.getPhone(),</span>
+<span class="fc" id="L135">                user.getAddress()</span>
+        );
+    }
+
+    private UserListDTO convertToUserListDTO(User user) {
+<span class="fc" id="L140">        UserAuth userAuth = user.getUserAuth();</span>
+<span class="fc" id="L141">        return new UserListDTO(</span>
+<span class="fc" id="L142">                user.getId(),</span>
+<span class="fc" id="L143">                userAuth.getUsername(),</span>
+<span class="fc" id="L144">                user.getName(),</span>
+<span class="fc" id="L145">                user.getEmail(),</span>
+<span class="fc" id="L146">                user.getPhone(),</span>
+<span class="fc" id="L147">                userAuth.getRole(),</span>
+<span class="fc" id="L148">                userAuth.getActive(),</span>
+<span class="fc" id="L149">                userAuth.getCreatedAt(),</span>
+<span class="fc" id="L150">                userAuth.getLastLogin()</span>
+        );
+    }
+} 
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

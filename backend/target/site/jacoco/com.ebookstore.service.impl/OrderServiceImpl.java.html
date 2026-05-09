@@ -1,0 +1,297 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OrderServiceImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ebookstore-backend</a> &gt; <a href="index.source.html" class="el_package">com.ebookstore.service.impl</a> &gt; <span class="el_source">OrderServiceImpl.java</span></div><h1>OrderServiceImpl.java</h1><pre class="source lang-java linenums">package com.ebookstore.service.impl;
+
+import com.ebookstore.dto.OrderDTO;
+import com.ebookstore.dto.OrderItemDTO;
+import com.ebookstore.dto.UserInfoDTO;
+import com.ebookstore.entity.CartItem;
+import com.ebookstore.entity.Order;
+import com.ebookstore.entity.OrderItem;
+import com.ebookstore.entity.User;
+import com.ebookstore.entity.Book;
+import com.ebookstore.repository.CartItemRepository;
+import com.ebookstore.repository.OrderRepository;
+import com.ebookstore.repository.BookRepository;
+import com.ebookstore.service.OrderService;
+import com.ebookstore.service.UserService;
+import com.ebookstore.service.BookService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import javax.persistence.EntityNotFoundException;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.Map;
+
+@Service
+<span class="fc" id="L31">public class OrderServiceImpl implements OrderService {</span>
+    
+    @Autowired
+    private OrderRepository orderRepository;
+    
+    @Autowired
+    private CartItemRepository cartItemRepository;
+    
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private BookRepository bookRepository;
+    
+    @Autowired
+    private BookService bookService;
+
+    @Override
+    public List&lt;OrderItemDTO&gt; getOrders() {
+<span class="fc" id="L50">        User user = userService.getCurrentUser();</span>
+<span class="fc" id="L51">        List&lt;OrderItemDTO&gt; orderItems = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L53">        orderRepository.findByUserOrderByOrderDateDesc(user).forEach(order -&gt; {</span>
+<span class="fc" id="L54">            order.getItems().forEach(item -&gt; {</span>
+<span class="fc" id="L55">                orderItems.add(convertToDTO(item));</span>
+<span class="fc" id="L56">            });</span>
+<span class="fc" id="L57">        });</span>
+
+<span class="fc" id="L59">        return orderItems;</span>
+    }
+    
+    @Override
+    public OrderDTO getOrderById(Long id) {
+<span class="fc" id="L64">        User user = userService.getCurrentUser();</span>
+<span class="fc" id="L65">        Order order = orderRepository.findById(id)</span>
+<span class="fc" id="L66">                .orElseThrow(() -&gt; new EntityNotFoundException(&quot;未找到ID为 &quot; + id + &quot; 的订单&quot;));</span>
+        
+        // 安全检查
+<span class="fc bfc" id="L69" title="All 2 branches covered.">        if (!order.getUser().getId().equals(user.getId())) {</span>
+<span class="fc" id="L70">            throw new SecurityException(&quot;无权查看此订单&quot;);</span>
+        }
+        
+<span class="fc" id="L73">        return convertToOrderDTO(order);</span>
+    }
+    
+    @Override
+    @Transactional
+    public List&lt;OrderItemDTO&gt; createOrder(List&lt;Long&gt; cartItemIds) {
+<span class="fc" id="L79">        User user = userService.getCurrentUser();</span>
+                
+        // 获取要购买的购物车项
+        List&lt;CartItem&gt; selectedItems;
+<span class="pc bpc" id="L83" title="1 of 4 branches missed.">        if (cartItemIds == null || cartItemIds.isEmpty()) {</span>
+            // 如果没有指定ID，则获取所有已选中的项目
+<span class="fc" id="L85">            selectedItems = cartItemRepository.findByUserAndSelected(user, true);</span>
+        } else {
+            // 否则获取指定ID的项目
+<span class="fc" id="L88">            selectedItems = cartItemRepository.findAllById(cartItemIds).stream()</span>
+<span class="fc" id="L89">                    .filter(item -&gt; item.getUser().getId().equals(user.getId()))</span>
+<span class="fc" id="L90">                    .collect(Collectors.toList());</span>
+        }
+                
+<span class="fc bfc" id="L93" title="All 2 branches covered.">        if (selectedItems.isEmpty()) {</span>
+<span class="fc" id="L94">            throw new IllegalArgumentException(&quot;没有可购买的商品&quot;);</span>
+        }
+        
+        // 先检查所有商品的库存
+<span class="fc bfc" id="L98" title="All 2 branches covered.">        for (CartItem cartItem : selectedItems) {</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">            if (!bookService.checkStock(cartItem.getBook().getId(), cartItem.getQuantity())) {</span>
+<span class="fc" id="L100">                throw new IllegalArgumentException(&quot;商品《&quot; + cartItem.getBook().getTitle() + &quot;》库存不足，需要&quot; + cartItem.getQuantity() + &quot;本&quot;);</span>
+            }
+<span class="fc" id="L102">        }</span>
+                
+        // 创建订单
+<span class="fc" id="L105">        Order order = new Order();</span>
+<span class="fc" id="L106">        order.setUser(user);</span>
+<span class="fc" id="L107">        order.setOrderDate(LocalDateTime.now());</span>
+<span class="fc" id="L108">        order.setStatus(&quot;COMPLETED&quot;); // 直接设置为已完成状态</span>
+<span class="fc" id="L109">        order.setShippingAddress(user.getAddress()); // 设置配送地址为用户地址</span>
+        
+        // 计算总金额并添加订单项
+<span class="fc" id="L112">        BigDecimal totalAmount = BigDecimal.ZERO;</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">        for (CartItem cartItem : selectedItems) {</span>
+<span class="fc" id="L114">            OrderItem orderItem = new OrderItem();</span>
+<span class="fc" id="L115">            orderItem.setBook(cartItem.getBook());</span>
+<span class="fc" id="L116">            orderItem.setQuantity(cartItem.getQuantity());</span>
+<span class="fc" id="L117">            orderItem.setPrice(cartItem.getBook().getPrice());</span>
+<span class="fc" id="L118">            orderItem.setSubtotal(cartItem.getBook().getPrice().multiply(new BigDecimal(cartItem.getQuantity())));</span>
+            
+            // 使用辅助方法建立关系
+<span class="fc" id="L121">            order.addOrderItem(orderItem);</span>
+<span class="fc" id="L122">            totalAmount = totalAmount.add(orderItem.getSubtotal());</span>
+<span class="fc" id="L123">        }</span>
+        
+        // 设置订单总金额
+<span class="fc" id="L126">        order.setTotalAmount(totalAmount);</span>
+        
+        try {
+            // 保存订单及订单项
+<span class="fc" id="L130">            order = orderRepository.save(order);</span>
+            
+            // 减少库存
+<span class="fc bfc" id="L133" title="All 2 branches covered.">            for (CartItem cartItem : selectedItems) {</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">                if (!bookService.reduceStock(cartItem.getBook().getId(), cartItem.getQuantity())) {</span>
+<span class="fc" id="L135">                    throw new RuntimeException(&quot;减少《&quot; + cartItem.getBook().getTitle() + &quot;》库存失败&quot;);</span>
+                }
+<span class="fc" id="L137">            }</span>
+            
+            // 删除购物车中的相关项目
+<span class="fc" id="L140">            cartItemRepository.deleteAll(selectedItems);</span>
+            
+            // 转换返回数据
+<span class="fc" id="L143">            return order.getItems().stream()</span>
+<span class="fc" id="L144">                    .map(this::convertToDTO)</span>
+<span class="fc" id="L145">                    .collect(Collectors.toList());</span>
+<span class="fc" id="L146">        } catch (Exception e) {</span>
+            // 记录错误并重新抛出
+<span class="fc" id="L148">            e.printStackTrace();</span>
+<span class="fc" id="L149">            throw new RuntimeException(&quot;创建订单或删除购物车项失败&quot;, e);</span>
+        }
+    }
+    
+    private OrderItemDTO convertToDTO(OrderItem orderItem) {
+<span class="fc" id="L154">        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(&quot;yyyy-MM-dd HH:mm:ss&quot;);</span>
+<span class="fc" id="L155">        String orderDate = orderItem.getOrder().getOrderDate().format(formatter);</span>
+        
+<span class="fc" id="L157">        return new OrderItemDTO(</span>
+<span class="fc" id="L158">                orderItem.getId(),</span>
+<span class="fc" id="L159">                orderItem.getBook().getId(),</span>
+<span class="fc" id="L160">                orderItem.getBook().getTitle(),</span>
+<span class="fc" id="L161">                orderItem.getBook().getAuthor(),</span>
+<span class="fc" id="L162">                orderItem.getPrice(),</span>
+<span class="fc" id="L163">                orderItem.getQuantity(),</span>
+<span class="fc" id="L164">                orderItem.getSubtotal(),</span>
+                orderDate
+        );
+    }
+    
+    private OrderDTO convertToOrderDTO(Order order) {
+<span class="fc" id="L170">        UserInfoDTO userDto = new UserInfoDTO(</span>
+<span class="fc" id="L171">                order.getUser().getId(),</span>
+<span class="fc" id="L172">                order.getUser().getName(),</span>
+<span class="fc" id="L173">                order.getUser().getEmail(),</span>
+<span class="fc" id="L174">                order.getUser().getAddress(),</span>
+<span class="fc" id="L175">                order.getUser().getPhone(),</span>
+<span class="fc" id="L176">                order.getUser().getUserAuth().getUsername(),</span>
+<span class="fc" id="L177">                order.getUser().getUserAuth().getRole()</span>
+        );
+        
+<span class="fc" id="L180">        return new OrderDTO(</span>
+<span class="fc" id="L181">                order.getId(),</span>
+<span class="fc" id="L182">                order.getOrderDate(),</span>
+<span class="fc" id="L183">                order.getTotalAmount(),</span>
+<span class="fc" id="L184">                order.getStatus(),</span>
+<span class="fc" id="L185">                order.getShippingAddress(),</span>
+                userDto,
+<span class="fc" id="L187">                order.getOrderItems().stream()</span>
+<span class="fc" id="L188">                        .map(this::convertToDTO)</span>
+<span class="fc" id="L189">                        .collect(Collectors.toList())</span>
+        );
+    }
+
+    @Override
+    @Transactional
+    public List&lt;OrderItemDTO&gt; createDirectOrder(List&lt;Map&lt;String, Object&gt;&gt; items) {
+<span class="fc" id="L196">        User user = userService.getCurrentUser();//函数依赖</span>
+
+        // 创建订单
+<span class="fc" id="L199">        Order order = new Order();</span>
+<span class="fc" id="L200">        order.setUser(user);</span>
+<span class="fc" id="L201">        order.setOrderDate(LocalDateTime.now());</span>
+<span class="fc" id="L202">        order.setStatus(&quot;COMPLETED&quot;);</span>
+<span class="fc" id="L203">        order.setShippingAddress(user.getAddress()); // 设置配送地址为用户地址</span>
+
+        // 先检查所有商品的库存
+<span class="fc bfc" id="L206" title="All 2 branches covered.">        for (Map&lt;String, Object&gt; item : items) {</span>
+<span class="fc" id="L207">            Long bookId = Long.valueOf(item.get(&quot;bookId&quot;).toString());</span>
+<span class="fc" id="L208">            Integer quantity = Integer.valueOf(item.get(&quot;quantity&quot;).toString());</span>
+            
+<span class="fc bfc" id="L210" title="All 2 branches covered.">            if (!bookService.checkStock(bookId, quantity)) {</span>
+<span class="fc" id="L211">                Book book = bookRepository.findById(bookId)</span>
+<span class="pc" id="L212">                        .orElseThrow(() -&gt; new EntityNotFoundException(&quot;未找到ID为 &quot; + bookId + &quot; 的书籍&quot;));</span>
+<span class="fc" id="L213">                throw new IllegalArgumentException(&quot;商品《&quot; + book.getTitle() + &quot;》库存不足，需要&quot; + quantity + &quot;本&quot;);</span>
+            }
+<span class="fc" id="L215">        }</span>
+
+        // 计算总金额并添加订单项
+<span class="fc" id="L218">        BigDecimal totalAmount = BigDecimal.ZERO;</span>
+
+<span class="fc bfc" id="L220" title="All 2 branches covered.">        for (Map&lt;String, Object&gt; item : items) {</span>
+<span class="fc" id="L221">            Long bookId = Long.valueOf(item.get(&quot;bookId&quot;).toString());</span>
+<span class="fc" id="L222">            Integer quantity = Integer.valueOf(item.get(&quot;quantity&quot;).toString());</span>
+
+<span class="fc" id="L224">            Book book = bookRepository.findById(bookId)</span>
+<span class="pc" id="L225">                    .orElseThrow(() -&gt; new EntityNotFoundException(&quot;未找到ID为 &quot; + bookId + &quot; 的书籍&quot;));</span>
+
+<span class="fc" id="L227">            OrderItem orderItem = new OrderItem();</span>
+<span class="fc" id="L228">            orderItem.setBook(book);</span>
+<span class="fc" id="L229">            orderItem.setQuantity(quantity);</span>
+<span class="fc" id="L230">            orderItem.setPrice(book.getPrice());</span>
+<span class="fc" id="L231">            orderItem.setSubtotal(book.getPrice().multiply(BigDecimal.valueOf(quantity)));</span>
+
+            // 使用辅助方法建立关系
+<span class="fc" id="L234">            order.addOrderItem(orderItem);</span>
+<span class="fc" id="L235">            totalAmount = totalAmount.add(orderItem.getSubtotal());</span>
+<span class="fc" id="L236">        }</span>
+
+<span class="fc" id="L238">        order.setTotalAmount(totalAmount);</span>
+        
+        try {
+            // 保存订单
+<span class="fc" id="L242">            order = orderRepository.save(order);</span>
+            
+            // 减少库存
+<span class="fc bfc" id="L245" title="All 2 branches covered.">            for (Map&lt;String, Object&gt; item : items) {</span>
+<span class="fc" id="L246">                Long bookId = Long.valueOf(item.get(&quot;bookId&quot;).toString());</span>
+<span class="fc" id="L247">                Integer quantity = Integer.valueOf(item.get(&quot;quantity&quot;).toString());</span>
+                
+<span class="fc bfc" id="L249" title="All 2 branches covered.">                if (!bookService.reduceStock(bookId, quantity)) {</span>
+<span class="fc" id="L250">                    Book book = bookRepository.findById(bookId)</span>
+<span class="pc" id="L251">                            .orElseThrow(() -&gt; new EntityNotFoundException(&quot;未找到ID为 &quot; + bookId + &quot; 的书籍&quot;));</span>
+<span class="fc" id="L252">                    throw new RuntimeException(&quot;减少《&quot; + book.getTitle() + &quot;》库存失败&quot;);</span>
+                }
+<span class="fc" id="L254">            }</span>
+        
+            // 转换返回数据
+<span class="fc" id="L257">            return order.getItems().stream()</span>
+<span class="fc" id="L258">                    .map(this::convertToDTO)</span>
+<span class="fc" id="L259">                    .collect(Collectors.toList());</span>
+<span class="fc" id="L260">        } catch (Exception e) {</span>
+            // 记录错误并重新抛出
+<span class="fc" id="L262">            e.printStackTrace();</span>
+<span class="fc" id="L263">            throw new RuntimeException(&quot;创建直接订单失败&quot;, e);</span>
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List&lt;OrderDTO&gt; searchUserOrders(String bookName, LocalDateTime startDate, LocalDateTime endDate) {
+<span class="fc" id="L270">        User user = userService.getCurrentUser();</span>
+<span class="fc" id="L271">        List&lt;Order&gt; orders = orderRepository.findByUserAndBookNameAndDateRange(</span>
+                user, bookName, startDate, endDate);
+<span class="fc" id="L273">        return orders.stream()</span>
+<span class="fc" id="L274">                .map(this::convertToOrderDTO)</span>
+<span class="fc" id="L275">                .collect(Collectors.toList());</span>
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List&lt;OrderDTO&gt; getAllOrders() {
+<span class="fc" id="L281">        List&lt;Order&gt; orders = orderRepository.findAllByOrderByOrderDateDesc();</span>
+<span class="fc" id="L282">        return orders.stream()</span>
+<span class="fc" id="L283">                .map(this::convertToOrderDTO)</span>
+<span class="fc" id="L284">                .collect(Collectors.toList());</span>
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List&lt;OrderDTO&gt; searchAllOrders(String bookName, LocalDateTime startDate, LocalDateTime endDate) {
+<span class="fc" id="L290">        List&lt;Order&gt; orders = orderRepository.findByBookNameAndDateRange(</span>
+                bookName, startDate, endDate);
+<span class="fc" id="L292">        return orders.stream()</span>
+<span class="fc" id="L293">                .map(this::convertToOrderDTO)</span>
+<span class="fc" id="L294">                .collect(Collectors.toList());</span>
+    }
+} 
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

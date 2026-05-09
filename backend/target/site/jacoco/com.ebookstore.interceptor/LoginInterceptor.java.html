@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LoginInterceptor.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ebookstore-backend</a> &gt; <a href="index.source.html" class="el_package">com.ebookstore.interceptor</a> &gt; <span class="el_source">LoginInterceptor.java</span></div><h1>LoginInterceptor.java</h1><pre class="source lang-java linenums">package com.ebookstore.interceptor;
+
+import com.ebookstore.dto.UserInfoDTO;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.HandlerInterceptor;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * 登录拦截器
+ * 实现Session管理和登录状态检查
+ * 除login链接外，其他链接均需检验用户是否登录
+ */
+@Component
+<span class="fc" id="L21">public class LoginInterceptor implements HandlerInterceptor {</span>
+    
+    private static final String SESSION_USER_KEY = &quot;currentUser&quot;;
+<span class="fc" id="L24">    private final ObjectMapper objectMapper = new ObjectMapper();</span>
+    
+    @Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) 
+            throws Exception {
+        
+<span class="fc" id="L30">        String requestURI = request.getRequestURI();</span>
+        
+        // 允许的无需登录的路径
+<span class="fc bfc" id="L33" title="All 2 branches covered.">        if (isAllowedPath(requestURI)) {</span>
+<span class="fc" id="L34">            return true;</span>
+        }
+        
+        // 处理OPTIONS请求（CORS预检请求）
+<span class="fc bfc" id="L38" title="All 2 branches covered.">        if (&quot;OPTIONS&quot;.equals(request.getMethod())) {</span>
+<span class="fc" id="L39">            return true;</span>
+        }
+        
+        // 检查Session中是否有用户信息
+<span class="fc" id="L43">        HttpSession session = request.getSession(false);</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">        if (session != null) {</span>
+<span class="fc" id="L45">            UserInfoDTO userInfo = (UserInfoDTO) session.getAttribute(SESSION_USER_KEY);</span>
+<span class="pc bpc" id="L46" title="1 of 2 branches missed.">            if (userInfo != null) {</span>
+<span class="fc" id="L47">                return true;</span>
+            }
+        }
+        
+        // 未登录，返回401错误
+<span class="fc" id="L52">        response.setContentType(&quot;application/json;charset=UTF-8&quot;);</span>
+<span class="fc" id="L53">        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);</span>
+        
+<span class="fc" id="L55">        Map&lt;String, Object&gt; result = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L56">        result.put(&quot;success&quot;, false);</span>
+<span class="fc" id="L57">        result.put(&quot;message&quot;, &quot;请先登录&quot;);</span>
+        
+<span class="fc" id="L59">        response.getWriter().write(objectMapper.writeValueAsString(result));</span>
+<span class="fc" id="L60">        return false;</span>
+    }
+    
+    /**
+     * 判断是否为允许未登录访问的路径
+     */
+    private boolean isAllowedPath(String path) {
+<span class="fc bfc" id="L67" title="All 2 branches covered.">        return path.startsWith(&quot;/api/auth/&quot;) ||    // 认证相关路径</span>
+<span class="fc bfc" id="L68" title="All 2 branches covered.">               path.startsWith(&quot;/api/books&quot;) ||    // 书籍浏览（公开访问）</span>
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">               path.equals(&quot;/api/health&quot;) ||       // 健康检查</span>
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">               path.equals(&quot;/api/error&quot;);          // 错误页面</span>
+    }
+} 
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

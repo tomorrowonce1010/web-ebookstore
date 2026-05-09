@@ -169,12 +169,12 @@ public class OrderServiceImpl implements OrderService {
     private OrderDTO convertToOrderDTO(Order order) {
         UserInfoDTO userDto = new UserInfoDTO(
                 order.getUser().getId(),
-                order.getUser().getUserAuth().getUsername(),
                 order.getUser().getName(),
                 order.getUser().getEmail(),
-                order.getUser().getUserAuth().getRole(),
+                order.getUser().getAddress(),
                 order.getUser().getPhone(),
-                order.getUser().getAddress()
+                order.getUser().getUserAuth().getUsername(),
+                order.getUser().getUserAuth().getRole()
         );
         
         return new OrderDTO(

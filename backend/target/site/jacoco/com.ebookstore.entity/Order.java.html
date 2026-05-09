@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Order.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ebookstore-backend</a> &gt; <a href="index.source.html" class="el_package">com.ebookstore.entity</a> &gt; <span class="el_source">Order.java</span></div><h1>Order.java</h1><pre class="source lang-java linenums">package com.ebookstore.entity;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import javax.persistence.*;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.ArrayList;
+
+/**
+ * 订单实体类
+ */
+@Entity
+@Table(name = &quot;orders&quot;)
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Order {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = &quot;user_id&quot;, nullable = false)
+    private User user;
+
+    @Column(name = &quot;total_amount&quot;, nullable = false, precision = 10, scale = 2)
+    private BigDecimal totalAmount;
+
+    @Column(length = 20)
+    private String status = &quot;PENDING&quot;; // PENDING, PAID, SHIPPED, DELIVERED, CANCELLED
+
+    @Column(name = &quot;shipping_address&quot;, length = 500)
+    private String shippingAddress;
+
+    @Column(name = &quot;order_date&quot;)
+    private LocalDateTime orderDate;
+
+    @Column(name = &quot;created_at&quot;)
+    private LocalDateTime createdAt;
+
+    @Column(name = &quot;updated_at&quot;)
+    private LocalDateTime updatedAt;
+
+    @OneToMany(mappedBy = &quot;order&quot;, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List&lt;OrderItem&gt; orderItems = new ArrayList&lt;&gt;();
+
+    @PrePersist
+    protected void onCreate() {
+<span class="fc" id="L54">        createdAt = LocalDateTime.now();</span>
+<span class="fc" id="L55">        updatedAt = LocalDateTime.now();</span>
+<span class="pc bpc" id="L56" title="1 of 2 branches missed.">        if (orderDate == null) {</span>
+<span class="fc" id="L57">            orderDate = LocalDateTime.now();</span>
+        }
+<span class="fc" id="L59">    }</span>
+
+    @PreUpdate
+    protected void onUpdate() {
+<span class="fc" id="L63">        updatedAt = LocalDateTime.now();</span>
+<span class="fc" id="L64">    }</span>
+
+    // Helper methods for managing order items
+    public List&lt;OrderItem&gt; getItems() {
+<span class="fc" id="L68">        return orderItems;</span>
+    }
+
+    public void addOrderItem(OrderItem orderItem) {
+<span class="fc" id="L72">        orderItems.add(orderItem);</span>
+<span class="fc" id="L73">        orderItem.setOrder(this);</span>
+<span class="fc" id="L74">    }</span>
+
+    public void removeOrderItem(OrderItem orderItem) {
+<span class="fc" id="L77">        orderItems.remove(orderItem);</span>
+<span class="fc" id="L78">        orderItem.setOrder(null);</span>
+<span class="fc" id="L79">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

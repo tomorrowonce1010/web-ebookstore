@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BookServiceImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ebookstore-backend</a> &gt; <a href="index.source.html" class="el_package">com.ebookstore.service.impl</a> &gt; <span class="el_source">BookServiceImpl.java</span></div><h1>BookServiceImpl.java</h1><pre class="source lang-java linenums">package com.ebookstore.service.impl;
+
+import com.ebookstore.dto.BookDTO;
+import com.ebookstore.entity.Book;
+import com.ebookstore.repository.BookRepository;
+import com.ebookstore.service.BookService;
+import com.ebookstore.service.CartService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import javax.persistence.EntityNotFoundException;
+import java.util.List;
+import java.util.stream.Collectors;
+
+/**
+ * 书籍服务实现类
+ * 使用Spring依赖注入
+ */
+@Service
+<span class="fc" id="L23">public class BookServiceImpl implements BookService {</span>
+    
+    @Autowired
+    private BookRepository bookRepository;
+    
+    @Autowired
+    private CartService cartService;
+    
+    // 普通用户功能 - 只显示未删除的书籍
+    
+    @Override
+    public List&lt;BookDTO&gt; getAllBooks() {
+<span class="fc" id="L35">        List&lt;Book&gt; books = bookRepository.findAllAvailable();</span>
+<span class="fc" id="L36">        return books.stream()</span>
+<span class="fc" id="L37">                .map(this::convertToDTO)</span>
+<span class="fc" id="L38">                .collect(Collectors.toList());</span>
+    }
+    
+    @Override
+    public BookDTO getBookById(Long id) {
+<span class="fc" id="L43">        Book book = bookRepository.findByIdAndNotDeleted(id)</span>
+<span class="fc" id="L44">                .orElseThrow(() -&gt; new EntityNotFoundException(&quot;未找到ID为 &quot; + id + &quot; 的书籍&quot;));</span>
+<span class="fc" id="L45">        return convertToDTO(book);</span>
+    }
+    
+    @Override
+    public List&lt;BookDTO&gt; searchBooks(String query) {
+<span class="fc" id="L50">        List&lt;Book&gt; books = bookRepository.searchAvailableBooks(query);</span>
+<span class="fc" id="L51">        return books.stream()</span>
+<span class="fc" id="L52">                .map(this::convertToDTO)</span>
+<span class="fc" id="L53">                .collect(Collectors.toList());</span>
+    }
+    
+    // 管理员功能
+    
+    @Override
+    public Book saveBook(Book book) {
+<span class="fc" id="L60">        return bookRepository.save(book);</span>
+    }
+    
+    @Override
+    @Transactional
+    public boolean softDeleteBook(Long id) {
+        try {
+<span class="fc" id="L67">            Book book = bookRepository.findById(id)</span>
+<span class="fc" id="L68">                    .orElseThrow(() -&gt; new EntityNotFoundException(&quot;未找到ID为 &quot; + id + &quot; 的书籍&quot;));</span>
+            
+            // 软删除书籍
+<span class="fc" id="L71">            book.setDeleted(true);</span>
+<span class="fc" id="L72">            bookRepository.save(book);</span>
+            
+            // 清理所有用户购物车中的该书籍
+<span class="fc" id="L75">            int cleanedCount = cartService.cleanCartByBookId(id);</span>
+<span class="fc" id="L76">            System.out.println(&quot;书籍《&quot; + book.getTitle() + &quot;》已软删除，同时清理了 &quot; + cleanedCount + &quot; 个购物车项&quot;);</span>
+            
+<span class="fc" id="L78">            return true;</span>
+<span class="fc" id="L79">        } catch (Exception e) {</span>
+<span class="fc" id="L80">            System.err.println(&quot;软删除书籍失败: &quot; + e.getMessage());</span>
+<span class="fc" id="L81">            return false;</span>
+        }
+    }
+    
+    @Override
+    @Transactional
+    public boolean restoreBook(Long id) {
+        try {
+<span class="fc" id="L89">            Book book = bookRepository.findById(id)</span>
+<span class="pc" id="L90">                    .orElseThrow(() -&gt; new EntityNotFoundException(&quot;未找到ID为 &quot; + id + &quot; 的书籍&quot;));</span>
+<span class="fc" id="L91">            book.setDeleted(false);</span>
+<span class="fc" id="L92">            bookRepository.save(book);</span>
+<span class="fc" id="L93">            return true;</span>
+<span class="fc" id="L94">        } catch (Exception e) {</span>
+<span class="fc" id="L95">            return false;</span>
+        }
+    }
+    
+    @Override
+    public Page&lt;Book&gt; getAllBooksForAdmin(Pageable pageable) {
+<span class="fc" id="L101">        return bookRepository.findAllForAdmin(pageable);</span>
+    }
+    
+    @Override
+    public Book getBookEntityById(Long id) {
+<span class="fc" id="L106">        return bookRepository.findById(id)</span>
+<span class="fc" id="L107">                .orElseThrow(() -&gt; new EntityNotFoundException(&quot;未找到ID为 &quot; + id + &quot; 的书籍&quot;));</span>
+    }
+    
+    @Override
+    public Book getAvailableBookById(Long id) {
+<span class="fc" id="L112">        return bookRepository.findByIdAndNotDeleted(id)</span>
+<span class="fc" id="L113">                .orElseThrow(() -&gt; new EntityNotFoundException(&quot;未找到ID为 &quot; + id + &quot; 的书籍&quot;));</span>
+    }
+    
+    @Override
+    public List&lt;Book&gt; searchBooksForAdmin(String query) {
+<span class="fc" id="L118">        return bookRepository.searchBooks(query);</span>
+    }
+    
+    // 库存管理方法 - 只能操作未删除的书籍
+    
+    @Override
+    @Transactional
+    public boolean updateStock(Long bookId, Integer quantity) {
+        try {
+<span class="fc" id="L127">            Book book = getAvailableBookById(bookId);</span>
+<span class="fc" id="L128">            book.setStock(quantity);</span>
+            
+            // 根据库存量更新状态
+<span class="fc bfc" id="L131" title="All 2 branches covered.">            if (quantity &gt; 0) {</span>
+<span class="fc" id="L132">                book.setStatus(&quot;AVAILABLE&quot;);</span>
+            } else {
+<span class="fc" id="L134">                book.setStatus(&quot;OUT_OF_STOCK&quot;);</span>
+            }
+            
+<span class="fc" id="L137">            bookRepository.save(book);</span>
+<span class="fc" id="L138">            return true;</span>
+<span class="fc" id="L139">        } catch (Exception e) {</span>
+<span class="fc" id="L140">            return false;</span>
+        }
+    }
+    
+    @Override
+    @Transactional
+    public boolean reduceStock(Long bookId, Integer quantity) {
+        try {
+<span class="fc" id="L148">            Book book = getAvailableBookById(bookId);</span>
+            
+<span class="fc bfc" id="L150" title="All 2 branches covered.">            if (book.getStock() &lt; quantity) {</span>
+<span class="fc" id="L151">                return false; // 库存不足</span>
+            }
+            
+<span class="fc" id="L154">            book.setStock(book.getStock() - quantity);</span>
+            
+            // 根据库存量更新状态
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">            if (book.getStock() == 0) {</span>
+<span class="fc" id="L158">                book.setStatus(&quot;OUT_OF_STOCK&quot;);</span>
+            }
+            
+<span class="fc" id="L161">            bookRepository.save(book);</span>
+<span class="fc" id="L162">            return true;</span>
+<span class="fc" id="L163">        } catch (Exception e) {</span>
+<span class="fc" id="L164">            return false;</span>
+        }
+    }
+    
+    @Override
+    public boolean checkStock(Long bookId, Integer quantity) {
+        try {
+<span class="fc" id="L171">            Book book = getAvailableBookById(bookId);</span>
+<span class="pc bpc" id="L172" title="1 of 2 branches missed.">            return book.getStock() &gt;= quantity;</span>
+<span class="fc" id="L173">        } catch (Exception e) {</span>
+<span class="fc" id="L174">            return false;</span>
+        }
+    }
+    
+    // 统计和订单相关方法 - 保持历史数据完整性
+    
+    @Override
+    public List&lt;Book&gt; getBooksByIds(List&lt;Long&gt; ids) {
+<span class="fc" id="L182">        return bookRepository.findByIdIn(ids);</span>
+    }
+    
+    // 私有辅助方法
+    
+    private BookDTO convertToDTO(Book book) {
+<span class="fc" id="L188">        BookDTO dto = new BookDTO();</span>
+<span class="fc" id="L189">        dto.setId(book.getId());</span>
+<span class="fc" id="L190">        dto.setTitle(book.getTitle());</span>
+<span class="fc" id="L191">        dto.setAuthor(book.getAuthor());</span>
+<span class="fc" id="L192">        dto.setPrice(book.getPrice());</span>
+<span class="fc" id="L193">        dto.setDescription(book.getDescription());</span>
+<span class="fc" id="L194">        dto.setCover(book.getCover());</span>
+<span class="fc" id="L195">        dto.setStatus(book.getStatus());</span>
+<span class="fc" id="L196">        dto.setStock(book.getStock());</span>
+<span class="fc" id="L197">        dto.setIsbn(book.getIsbn());</span>
+<span class="fc" id="L198">        dto.setDeleted(book.getDeleted());</span>
+<span class="fc" id="L199">        return dto;</span>
+    }
+} 
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

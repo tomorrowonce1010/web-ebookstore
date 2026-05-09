@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AdminUserController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ebookstore-backend</a> &gt; <a href="index.source.html" class="el_package">com.ebookstore.controller</a> &gt; <span class="el_source">AdminUserController.java</span></div><h1>AdminUserController.java</h1><pre class="source lang-java linenums">package com.ebookstore.controller;
+
+import com.ebookstore.dto.UserListDTO;
+import com.ebookstore.service.UserService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+//
+@RestController
+@RequestMapping(&quot;/api/admin/users&quot;)
+@RequiredArgsConstructor
+@CrossOrigin(origins = &quot;http://localhost:3000&quot;, allowCredentials = &quot;true&quot;)
+public class AdminUserController {
+
+    private final UserService userService;//final:不可变引用，变量被初始化后不能再指向其他对象
+
+    @GetMapping
+    public ResponseEntity&lt;List&lt;UserListDTO&gt;&gt; getAllUsers() {
+<span class="fc" id="L23">        List&lt;UserListDTO&gt; users = userService.getAllUsers();</span>
+<span class="fc" id="L24">        return ResponseEntity.ok(users);</span>
+    }
+
+    @PutMapping(&quot;/{userId}/status&quot;)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; toggleUserStatus(@PathVariable Long userId) {
+        try {
+<span class="fc" id="L30">            userService.toggleUserStatus(userId);</span>
+<span class="fc" id="L31">            Map&lt;String, Object&gt; response = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L32">            response.put(&quot;success&quot;, true);</span>
+<span class="fc" id="L33">            response.put(&quot;message&quot;, &quot;用户状态更新成功&quot;);</span>
+<span class="fc" id="L34">            return ResponseEntity.ok(response);</span>
+<span class="fc" id="L35">        } catch (Exception e) {</span>
+<span class="fc" id="L36">            Map&lt;String, Object&gt; response = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L37">            response.put(&quot;success&quot;, false);</span>
+<span class="fc" id="L38">            response.put(&quot;message&quot;, &quot;更新用户状态失败：&quot; + e.getMessage());</span>
+<span class="fc" id="L39">            return ResponseEntity.ok(response);</span>
+        }
+    }
+
+    @GetMapping(&quot;/statistics&quot;)//映射get请求到…路径
+    public ResponseEntity&lt;List&lt;UserListDTO&gt;&gt; getTopSpenders(//获取指定时间的消费最高用户列表
+            @RequestParam String startDate,
+            @RequestParam String endDate) {
+<span class="fc" id="L47">        List&lt;UserListDTO&gt; topSpenders = userService.getTopSpenders(startDate, endDate);</span>
+<span class="fc" id="L48">        return ResponseEntity.ok(topSpenders);</span>
+    }
+} 
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

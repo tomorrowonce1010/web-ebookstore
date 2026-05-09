@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Book.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ebookstore-backend</a> &gt; <a href="index.source.html" class="el_package">com.ebookstore.entity</a> &gt; <span class="el_source">Book.java</span></div><h1>Book.java</h1><pre class="source lang-java linenums">package com.ebookstore.entity;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import javax.persistence.*;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = &quot;books&quot;)
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Book {
+    
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)//主键自增
+    private Long id;
+    
+    @Column(nullable = false, length = 100)
+    private String title;
+    
+    @Column(nullable = false, length = 100)
+    private String author;
+    
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal price;
+    
+    @Column(length = 1000)
+    private String description;
+    
+    @Column(length = 255)
+    private String cover;
+    
+    @Column(length = 20)
+    private String status;//AVAILABLE/OUT_OF_STOCK
+    
+    @Column(nullable = false)
+    private Integer stock = 100; // 库存量，默认100本
+    
+    @Column(length = 50)
+    private String isbn; // ISBN编号
+    
+    @Column(nullable = false)
+    private Boolean deleted = false; // 软删除标记，默认false
+    
+    @Column(name = &quot;created_at&quot;)
+    private LocalDateTime createdAt;
+    
+    @Column(name = &quot;updated_at&quot;)
+    private LocalDateTime updatedAt;
+    
+    @PrePersist
+    protected void onCreate() {
+<span class="fc" id="L57">        createdAt = LocalDateTime.now();</span>
+<span class="fc" id="L58">        updatedAt = LocalDateTime.now();</span>
+<span class="pc bpc" id="L59" title="1 of 2 branches missed.">        if (deleted == null) {</span>
+<span class="fc" id="L60">            deleted = false;</span>
+        }
+<span class="fc" id="L62">    }</span>
+    
+    @PreUpdate
+    protected void onUpdate() {
+<span class="fc" id="L66">        updatedAt = LocalDateTime.now();</span>
+<span class="fc" id="L67">    }</span>
+} 
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>WebConfig.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ebookstore-backend</a> &gt; <a href="index.source.html" class="el_package">com.ebookstore.config</a> &gt; <span class="el_source">WebConfig.java</span></div><h1>WebConfig.java</h1><pre class="source lang-java linenums">package com.ebookstore.config;
+
+import com.ebookstore.interceptor.AdminInterceptor;
+import com.ebookstore.interceptor.LoginInterceptor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+/**
+ * Web配置类
+ * 注册拦截器，配置CORS
+ */
+@Configuration
+<span class="fc" id="L16">public class WebConfig implements WebMvcConfigurer {</span>
+    
+    @Autowired
+    private LoginInterceptor loginInterceptor;//依赖注入：注入登录拦截器
+    
+    @Autowired
+    private AdminInterceptor adminInterceptor;//依赖注入：注入管理员权限拦截器
+    
+    @Override//覆盖方法：注册拦截器
+    public void addInterceptors(InterceptorRegistry registry) {
+        // 注册登录拦截器
+<span class="fc" id="L27">        registry.addInterceptor(loginInterceptor)</span>
+<span class="fc" id="L28">                .addPathPatterns(&quot;/api/**&quot;) // 只对API路径生效</span>
+<span class="fc" id="L29">                .excludePathPatterns(</span>
+                        &quot;/api/auth/**&quot;,  // 排除认证相关路径
+                        &quot;/api/health&quot;,   // 排除健康检查
+                        &quot;/error&quot;         // 排除错误页面
+                );
+        
+        // 注册管理员权限拦截器
+<span class="fc" id="L36">        registry.addInterceptor(adminInterceptor)</span>
+<span class="fc" id="L37">                .addPathPatterns(&quot;/api/admin/**&quot;); // 只对管理员API路径生效</span>
+<span class="fc" id="L38">    }</span>
+    
+    @Override//覆盖方法：配置CORS
+    public void addCorsMappings(CorsRegistry registry) {
+        // 配置CORS，允许前端跨域访问
+<span class="fc" id="L43">        registry.addMapping(&quot;/api/**&quot;)</span>
+<span class="fc" id="L44">                .allowedOrigins(&quot;http://localhost:3000&quot;)//允许前端访问后端api</span>
+<span class="fc" id="L45">                .allowedMethods(&quot;GET&quot;, &quot;POST&quot;, &quot;PUT&quot;, &quot;DELETE&quot;, &quot;OPTIONS&quot;)//支持的方法</span>
+<span class="fc" id="L46">                .allowedHeaders(&quot;*&quot;)</span>
+<span class="fc" id="L47">                .allowCredentials(true) // 允许Cookie</span>
+<span class="fc" id="L48">                .maxAge(3600);</span>
+<span class="fc" id="L49">    }</span>
+} 
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AdminBookController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ebookstore-backend</a> &gt; <a href="index.source.html" class="el_package">com.ebookstore.controller</a> &gt; <span class="el_source">AdminBookController.java</span></div><h1>AdminBookController.java</h1><pre class="source lang-java linenums">package com.ebookstore.controller;
+
+import com.ebookstore.entity.Book;
+import com.ebookstore.service.BookService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import javax.validation.Valid;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * 管理员书籍管理控制器
+ * 实现管理员对书籍的增删改查功能
+ */
+@RestController
+@RequestMapping(&quot;/api/admin/books&quot;)
+@CrossOrigin(origins = &quot;http://localhost:3000&quot;, allowCredentials = &quot;true&quot;)
+<span class="fc" id="L23">public class AdminBookController {</span>
+    
+    @Autowired//自动注入BookService实例，用于处理与书籍相关的业务逻辑
+    private BookService bookService;
+    
+    /**
+     * 获取所有书籍（分页）
+     */
+    @GetMapping
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; getAllBooks(
+            @RequestParam(defaultValue = &quot;0&quot;) int page,
+            @RequestParam(defaultValue = &quot;10&quot;) int size) {
+        
+        try {
+<span class="fc" id="L37">            PageRequest pageRequest = PageRequest.of(page, size);//分页请求对象 page：页码，size：每页大小</span>
+<span class="fc" id="L38">            Page&lt;Book&gt; bookPage = bookService.getAllBooksForAdmin(pageRequest);//函数依赖 获取管理员视图的图书</span>
+            
+<span class="fc" id="L40">            Map&lt;String, Object&gt; response = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L41">            response.put(&quot;success&quot;, true);</span>
+<span class="fc" id="L42">            response.put(&quot;data&quot;, bookPage.getContent());//当前页数据</span>
+<span class="fc" id="L43">            response.put(&quot;total&quot;, bookPage.getTotalElements());//总记录数</span>
+<span class="fc" id="L44">            response.put(&quot;page&quot;, page);</span>
+<span class="fc" id="L45">            response.put(&quot;size&quot;, size);</span>
+<span class="fc" id="L46">            response.put(&quot;totalPages&quot;, bookPage.getTotalPages());//总页数</span>
+            
+<span class="fc" id="L48">            return ResponseEntity.ok(response);</span>
+            
+<span class="fc" id="L50">        } catch (Exception e) {</span>
+<span class="fc" id="L51">            Map&lt;String, Object&gt; response = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L52">            response.put(&quot;success&quot;, false);</span>
+<span class="fc" id="L53">            response.put(&quot;message&quot;, &quot;获取书籍列表失败：&quot; + e.getMessage());</span>
+            
+<span class="fc" id="L55">            return ResponseEntity.ok(response);</span>
+        }
+    }
+    
+    /**
+     * 根据ID获取书籍详情
+     */
+    @GetMapping(&quot;/{id}&quot;)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; getBookById(@PathVariable Long id) {
+        try {
+<span class="fc" id="L65">            Book book = bookService.getBookEntityById(id);//获取图书实体</span>
+            
+<span class="fc" id="L67">            Map&lt;String, Object&gt; response = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L68">            response.put(&quot;success&quot;, true);</span>
+<span class="fc" id="L69">            response.put(&quot;data&quot;, book);</span>
+            
+<span class="fc" id="L71">            return ResponseEntity.ok(response);</span>
+            
+<span class="fc" id="L73">        } catch (Exception e) {</span>
+<span class="fc" id="L74">            Map&lt;String, Object&gt; response = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L75">            response.put(&quot;success&quot;, false);</span>
+<span class="fc" id="L76">            response.put(&quot;message&quot;, &quot;获取书籍详情失败：&quot; + e.getMessage());</span>
+            
+<span class="fc" id="L78">            return ResponseEntity.ok(response);</span>
+        }
+    }
+    
+    /**
+     * 添加新书籍 请求json-&gt;Book实体-&gt;数据库保存-&gt;响应json
+     */
+    @PostMapping
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; addBook(@Valid @RequestBody Book book) {
+        try {
+<span class="fc" id="L88">            Book savedBook = bookService.saveBook(book);//函数依赖 保存图书实体</span>
+            
+<span class="fc" id="L90">            Map&lt;String, Object&gt; response = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L91">            response.put(&quot;success&quot;, true);</span>
+<span class="fc" id="L92">            response.put(&quot;message&quot;, &quot;书籍添加成功&quot;);</span>
+<span class="fc" id="L93">            response.put(&quot;data&quot;, savedBook);</span>
+            
+<span class="fc" id="L95">            return ResponseEntity.ok(response);</span>
+            
+<span class="fc" id="L97">        } catch (Exception e) {</span>
+<span class="fc" id="L98">            Map&lt;String, Object&gt; response = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L99">            response.put(&quot;success&quot;, false);</span>
+<span class="fc" id="L100">            response.put(&quot;message&quot;, &quot;添加书籍失败：&quot; + e.getMessage());</span>
+            
+<span class="fc" id="L102">            return ResponseEntity.ok(response);</span>
+        }
+    }
+    
+    /**
+     * 更新书籍信息
+     */
+    @PutMapping(&quot;/{id}&quot;)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; updateBook(
+            @PathVariable Long id, 
+            @Valid @RequestBody Book book) {
+        
+        try {
+<span class="fc" id="L115">            book.setId(id); // 确保ID正确</span>
+<span class="fc" id="L116">            Book updatedBook = bookService.saveBook(book);</span>
+            
+<span class="fc" id="L118">            Map&lt;String, Object&gt; response = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L119">            response.put(&quot;success&quot;, true);</span>
+<span class="fc" id="L120">            response.put(&quot;message&quot;, &quot;书籍更新成功&quot;);</span>
+<span class="fc" id="L121">            response.put(&quot;data&quot;, updatedBook);</span>
+            
+<span class="fc" id="L123">            return ResponseEntity.ok(response);</span>
+            
+<span class="fc" id="L125">        } catch (Exception e) {</span>
+<span class="fc" id="L126">            Map&lt;String, Object&gt; response = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L127">            response.put(&quot;success&quot;, false);</span>
+<span class="fc" id="L128">            response.put(&quot;message&quot;, &quot;更新书籍失败：&quot; + e.getMessage());</span>
+            
+<span class="fc" id="L130">            return ResponseEntity.ok(response);</span>
+        }
+    }
+    
+    /**
+     * 删除书籍（软删除）或恢复书籍
+     */
+    @DeleteMapping(&quot;/{id}&quot;)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; toggleBookStatus(@PathVariable Long id) {
+        try {
+            // 先获取书籍当前状态
+<span class="fc" id="L141">            Book book = bookService.getBookEntityById(id);</span>
+            boolean success;
+            String message;
+            
+<span class="fc bfc" id="L145" title="All 2 branches covered.">            if (book.getDeleted()) {</span>
+                // 书籍已删除，执行恢复操作
+<span class="fc" id="L147">                success = bookService.restoreBook(id);</span>
+<span class="pc bpc" id="L148" title="1 of 2 branches missed.">                message = success ? &quot;书籍恢复成功&quot; : &quot;恢复失败&quot;;</span>
+            } else {
+                // 书籍未删除，执行删除操作
+<span class="fc" id="L151">                success = bookService.softDeleteBook(id);</span>
+<span class="pc bpc" id="L152" title="1 of 2 branches missed.">                message = success ? &quot;书籍删除成功&quot; : &quot;删除失败&quot;;</span>
+            }
+            
+<span class="fc" id="L155">            Map&lt;String, Object&gt; response = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L156">            response.put(&quot;success&quot;, success);</span>
+<span class="fc" id="L157">            response.put(&quot;message&quot;, message);</span>
+            
+<span class="fc" id="L159">            return ResponseEntity.ok(response);</span>
+            
+<span class="fc" id="L161">        } catch (Exception e) {</span>
+<span class="fc" id="L162">            Map&lt;String, Object&gt; response = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L163">            response.put(&quot;success&quot;, false);</span>
+<span class="fc" id="L164">            response.put(&quot;message&quot;, &quot;操作失败：&quot; + e.getMessage());</span>
+            
+<span class="fc" id="L166">            return ResponseEntity.ok(response);</span>
+        }
+    }
+    
+    /**
+     * 搜索书籍
+     */
+    @GetMapping(&quot;/search&quot;)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; searchBooks(@RequestParam String keyword) {
+        try {
+<span class="fc" id="L176">            List&lt;Book&gt; books = bookService.searchBooksForAdmin(keyword);</span>
+            
+<span class="fc" id="L178">            Map&lt;String, Object&gt; response = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L179">            response.put(&quot;success&quot;, true);</span>
+<span class="fc" id="L180">            response.put(&quot;data&quot;, books);</span>
+<span class="fc" id="L181">            response.put(&quot;total&quot;, books.size());</span>
+            
+<span class="fc" id="L183">            return ResponseEntity.ok(response);</span>
+            
+<span class="fc" id="L185">        } catch (Exception e) {</span>
+<span class="fc" id="L186">            Map&lt;String, Object&gt; response = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L187">            response.put(&quot;success&quot;, false);</span>
+<span class="fc" id="L188">            response.put(&quot;message&quot;, &quot;搜索书籍失败：&quot; + e.getMessage());</span>
+            
+<span class="fc" id="L190">            return ResponseEntity.ok(response);</span>
+        }
+    }
+    
+    /**
+     * 更新书籍库存
+     */
+    @PutMapping(&quot;/{id}/stock&quot;)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; updateBookStock(
+            @PathVariable Long id, 
+            @RequestParam Integer stock) {
+        
+        try {
+<span class="fc" id="L203">            boolean success = bookService.updateStock(id, stock);</span>
+            
+<span class="fc" id="L205">            Map&lt;String, Object&gt; response = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L206" title="All 2 branches covered.">            if (success) {</span>
+<span class="fc" id="L207">                response.put(&quot;success&quot;, true);</span>
+<span class="fc" id="L208">                response.put(&quot;message&quot;, &quot;库存更新成功&quot;);</span>
+            } else {
+<span class="fc" id="L210">                response.put(&quot;success&quot;, false);</span>
+<span class="fc" id="L211">                response.put(&quot;message&quot;, &quot;库存更新失败&quot;);</span>
+            }
+            
+<span class="fc" id="L214">            return ResponseEntity.ok(response);</span>
+            
+<span class="fc" id="L216">        } catch (Exception e) {</span>
+<span class="fc" id="L217">            Map&lt;String, Object&gt; response = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L218">            response.put(&quot;success&quot;, false);</span>
+<span class="fc" id="L219">            response.put(&quot;message&quot;, &quot;更新库存失败：&quot; + e.getMessage());</span>
+            
+<span class="fc" id="L221">            return ResponseEntity.ok(response);</span>
+        }
+    }
+    
+    /**
+     * 检查书籍库存
+     */
+    @GetMapping(&quot;/{id}/stock&quot;)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; checkBookStock(
+            @PathVariable Long id,
+            @RequestParam(required = false, defaultValue = &quot;1&quot;) Integer quantity) {
+        
+        try {
+<span class="fc" id="L234">            boolean available = bookService.checkStock(id, quantity);</span>
+            
+<span class="fc" id="L236">            Map&lt;String, Object&gt; response = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L237">            response.put(&quot;success&quot;, true);</span>
+<span class="fc" id="L238">            response.put(&quot;available&quot;, available);</span>
+<span class="fc bfc" id="L239" title="All 2 branches covered.">            response.put(&quot;message&quot;, available ? &quot;库存充足&quot; : &quot;库存不足&quot;);</span>
+            
+<span class="fc" id="L241">            return ResponseEntity.ok(response);</span>
+            
+<span class="fc" id="L243">        } catch (Exception e) {</span>
+<span class="fc" id="L244">            Map&lt;String, Object&gt; response = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L245">            response.put(&quot;success&quot;, false);</span>
+<span class="fc" id="L246">            response.put(&quot;message&quot;, &quot;检查库存失败：&quot; + e.getMessage());</span>
+            
+<span class="fc" id="L248">            return ResponseEntity.ok(response);</span>
+        }
+    }
+} 
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

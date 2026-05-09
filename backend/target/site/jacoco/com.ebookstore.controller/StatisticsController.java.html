@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StatisticsController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ebookstore-backend</a> &gt; <a href="index.source.html" class="el_package">com.ebookstore.controller</a> &gt; <span class="el_source">StatisticsController.java</span></div><h1>StatisticsController.java</h1><pre class="source lang-java linenums">package com.ebookstore.controller;
+
+import com.ebookstore.dto.BookSalesStatisticsDto;
+import com.ebookstore.dto.PersonalStatisticsDto;
+import com.ebookstore.dto.UserConsumptionStatisticsDto;
+import com.ebookstore.dto.UserInfoDTO;
+import com.ebookstore.service.StatisticsService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import javax.servlet.http.HttpSession;
+import java.time.LocalDateTime;
+import java.util.List;
+
+/**
+ * 统计控制器
+ */
+@RestController//标识为REST控制器，自动序列化返回json
+@RequestMapping(&quot;/api/statistics&quot;)//设置基础路径为/api/statistics
+@CrossOrigin(origins = &quot;http://localhost:3000&quot;, allowCredentials = &quot;true&quot;)
+<span class="fc" id="L23">public class StatisticsController {</span>
+    
+    @Autowired
+    private StatisticsService statisticsService;
+    
+    /**
+     * 获取书籍销量统计（热销榜）- 管理员功能
+     */
+    @GetMapping(&quot;/books&quot;)
+    public ResponseEntity&lt;?&gt; getBookSalesStatistics(
+            //接收url参数 startDate和endDate 并将其解析为LocalDateTime类型的对象
+            @RequestParam(&quot;startDate&quot;) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam(&quot;endDate&quot;) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            HttpSession session) {
+        
+        try {
+<span class="fc" id="L39">            System.out.println(&quot;=== 书籍销量统计请求 ===&quot;);</span>
+<span class="fc" id="L40">            System.out.println(&quot;开始时间: &quot; + startDate);</span>
+<span class="fc" id="L41">            System.out.println(&quot;结束时间: &quot; + endDate);</span>
+            
+            // 检查管理员权限
+<span class="fc" id="L44">            UserInfoDTO currentUser = (UserInfoDTO) session.getAttribute(&quot;currentUser&quot;);//获取用户会话信息</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">            System.out.println(&quot;当前用户: &quot; + (currentUser != null ? currentUser.getUsername() : &quot;null&quot;));</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">            System.out.println(&quot;用户角色: &quot; + (currentUser != null ? currentUser.getRole() : &quot;null&quot;));</span>
+            
+<span class="fc bfc" id="L48" title="All 2 branches covered.">            if (currentUser == null) {</span>
+<span class="fc" id="L49">                return ResponseEntity.status(401).body(&quot;用户未登录&quot;);</span>
+            }
+            
+<span class="fc bfc" id="L52" title="All 2 branches covered.">            if (!&quot;ADMIN&quot;.equals(currentUser.getRole())) {</span>
+<span class="fc" id="L53">                return ResponseEntity.status(403).body(&quot;只有管理员可以查看书籍销量统计&quot;);</span>
+            }
+            //调用统计服务的getBookSalesStatistics方法 获取统计数据
+<span class="fc" id="L56">            List&lt;BookSalesStatisticsDto&gt; statistics = statisticsService.getBookSalesStatistics(startDate, endDate);</span>
+<span class="pc bpc" id="L57" title="1 of 2 branches missed.">            System.out.println(&quot;查询到的统计数据数量: &quot; + (statistics != null ? statistics.size() : 0));</span>
+<span class="fc" id="L58">            return ResponseEntity.ok(statistics);</span>
+            
+<span class="fc" id="L60">        } catch (Exception e) {</span>
+<span class="fc" id="L61">            System.err.println(&quot;书籍销量统计异常: &quot; + e.getMessage());</span>
+<span class="fc" id="L62">            e.printStackTrace();</span>
+<span class="fc" id="L63">            return ResponseEntity.status(500).body(&quot;获取书籍销量统计失败: &quot; + e.getMessage());</span>
+        }
+    }
+    
+    /**
+     * 获取用户消费统计（消费榜）- 管理员功能
+     */
+    @GetMapping(&quot;/users&quot;)
+    public ResponseEntity&lt;?&gt; getUserConsumptionStatistics(
+            @RequestParam(&quot;startDate&quot;) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam(&quot;endDate&quot;) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            HttpSession session) {
+        
+        try {
+<span class="fc" id="L77">            System.out.println(&quot;=== 用户消费统计请求 ===&quot;);</span>
+<span class="fc" id="L78">            System.out.println(&quot;开始时间: &quot; + startDate);</span>
+<span class="fc" id="L79">            System.out.println(&quot;结束时间: &quot; + endDate);</span>
+            
+            // 检查管理员权限
+<span class="fc" id="L82">            UserInfoDTO currentUser = (UserInfoDTO) session.getAttribute(&quot;currentUser&quot;);</span>
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">            System.out.println(&quot;当前用户: &quot; + (currentUser != null ? currentUser.getUsername() : &quot;null&quot;));</span>
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">            System.out.println(&quot;用户角色: &quot; + (currentUser != null ? currentUser.getRole() : &quot;null&quot;));</span>
+            
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">            if (currentUser == null) {</span>
+<span class="nc" id="L87">                return ResponseEntity.status(401).body(&quot;用户未登录&quot;);</span>
+            }
+            
+<span class="fc bfc" id="L90" title="All 2 branches covered.">            if (!&quot;ADMIN&quot;.equals(currentUser.getRole())) {</span>
+<span class="fc" id="L91">                return ResponseEntity.status(403).body(&quot;只有管理员可以查看用户消费统计&quot;);</span>
+            }
+
+            //返回UserConsumptionStatisticsDto列表
+<span class="fc" id="L95">            List&lt;UserConsumptionStatisticsDto&gt; statistics = statisticsService.getUserConsumptionStatistics(startDate, endDate);</span>
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">            System.out.println(&quot;查询到的用户消费统计数据数量: &quot; + (statistics != null ? statistics.size() : 0));</span>
+<span class="fc" id="L97">            return ResponseEntity.ok(statistics);</span>
+            
+<span class="nc" id="L99">        } catch (Exception e) {</span>
+<span class="nc" id="L100">            System.err.println(&quot;用户消费统计异常: &quot; + e.getMessage());</span>
+<span class="nc" id="L101">            e.printStackTrace();</span>
+<span class="nc" id="L102">            return ResponseEntity.status(500).body(&quot;获取用户消费统计失败: &quot; + e.getMessage());</span>
+        }
+    }
+    
+    /**
+     * 获取个人购书统计 - 用户功能
+     */
+    @GetMapping(&quot;/personal&quot;)
+    //responseEntity响应体类型不确定（DTO/错误信息）
+    public ResponseEntity&lt;?&gt; getPersonalStatistics(
+            @RequestParam(&quot;startDate&quot;) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam(&quot;endDate&quot;) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            HttpSession session) {
+        
+        try {
+<span class="fc" id="L117">            System.out.println(&quot;=== 个人购书统计请求 ===&quot;);</span>
+<span class="fc" id="L118">            System.out.println(&quot;开始时间: &quot; + startDate);</span>
+<span class="fc" id="L119">            System.out.println(&quot;结束时间: &quot; + endDate);</span>
+            
+            // 检查用户登录状态
+<span class="fc" id="L122">            UserInfoDTO currentUser = (UserInfoDTO) session.getAttribute(&quot;currentUser&quot;);</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">            System.out.println(&quot;当前用户: &quot; + (currentUser != null ? currentUser.getUsername() : &quot;null&quot;));</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">            System.out.println(&quot;用户ID: &quot; + (currentUser != null ? currentUser.getId() : &quot;null&quot;));</span>
+            
+<span class="fc bfc" id="L126" title="All 2 branches covered.">            if (currentUser == null) {</span>
+<span class="fc" id="L127">                return ResponseEntity.status(401).body(&quot;用户未登录&quot;);</span>
+            }
+            
+<span class="fc" id="L130">            Long userId = currentUser.getId();</span>
+            
+<span class="fc" id="L132">            PersonalStatisticsDto statistics = statisticsService.getPersonalStatistics(userId, startDate, endDate);</span>
+<span class="fc" id="L133">            System.out.println(&quot;个人统计数据: &quot; + statistics);</span>
+<span class="fc" id="L134">            return ResponseEntity.ok(statistics);</span>
+            
+<span class="fc" id="L136">        } catch (Exception e) {</span>
+<span class="fc" id="L137">            System.err.println(&quot;个人统计异常: &quot; + e.getMessage());</span>
+<span class="fc" id="L138">            e.printStackTrace();</span>
+<span class="fc" id="L139">            return ResponseEntity.status(500).body(&quot;获取个人统计失败: &quot; + e.getMessage());</span>
+        }
+    }
+} 
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

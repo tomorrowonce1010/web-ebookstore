@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BookController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ebookstore-backend</a> &gt; <a href="index.source.html" class="el_package">com.ebookstore.controller</a> &gt; <span class="el_source">BookController.java</span></div><h1>BookController.java</h1><pre class="source lang-java linenums">package com.ebookstore.controller;
+
+import com.ebookstore.dto.BookDTO;
+import com.ebookstore.service.BookService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * 书籍控制器
+ * 处理书籍相关的公开API请求
+ */
+@RestController
+@RequestMapping(&quot;/api/books&quot;)
+@CrossOrigin(origins = &quot;http://localhost:3000&quot;, allowCredentials = &quot;true&quot;)
+<span class="fc" id="L20">public class BookController {</span>
+
+    @Autowired
+    private BookService bookService;
+
+    /**
+     * 获取所有书籍
+     */
+    @GetMapping
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; getAllBooks() {
+<span class="fc" id="L30">        Map&lt;String, Object&gt; response = new HashMap&lt;&gt;();</span>
+        try {
+<span class="fc" id="L32">            List&lt;BookDTO&gt; books = bookService.getAllBooks();</span>
+<span class="fc" id="L33">            response.put(&quot;success&quot;, true);</span>
+<span class="fc" id="L34">            response.put(&quot;data&quot;, books);</span>
+<span class="fc" id="L35">            return ResponseEntity.ok(response);</span>
+<span class="fc" id="L36">        } catch (Exception e) {</span>
+<span class="fc" id="L37">            System.out.println(&quot;获取书籍列表失败: &quot; + e.getMessage());</span>
+<span class="fc" id="L38">            e.printStackTrace();</span>
+<span class="fc" id="L39">            response.put(&quot;success&quot;, false);</span>
+<span class="fc" id="L40">            response.put(&quot;message&quot;, &quot;获取书籍列表失败：&quot; + e.getMessage());</span>
+<span class="fc" id="L41">            return ResponseEntity.ok(response);</span>
+        }
+    }
+
+    /**
+     * 根据ID获取书籍详情
+     */
+    @GetMapping(&quot;/{id}&quot;)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; getBookById(@PathVariable Long id) {
+<span class="fc" id="L50">        Map&lt;String, Object&gt; response = new HashMap&lt;&gt;();</span>
+        try {
+<span class="fc" id="L52">            BookDTO book = bookService.getBookById(id);</span>
+<span class="fc" id="L53">            response.put(&quot;success&quot;, true);</span>
+<span class="fc" id="L54">            response.put(&quot;data&quot;, book);</span>
+<span class="fc" id="L55">            return ResponseEntity.ok(response);</span>
+<span class="fc" id="L56">        } catch (Exception e) {</span>
+<span class="fc" id="L57">            System.out.println(&quot;获取书籍详情失败: &quot; + e.getMessage());</span>
+<span class="fc" id="L58">            e.printStackTrace();</span>
+<span class="fc" id="L59">            response.put(&quot;success&quot;, false);</span>
+<span class="fc" id="L60">            response.put(&quot;message&quot;, &quot;获取书籍详情失败：&quot; + e.getMessage());</span>
+<span class="fc" id="L61">            return ResponseEntity.ok(response);</span>
+        }
+    }
+
+    /**
+     * 搜索书籍
+     */
+    @GetMapping(&quot;/search&quot;)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; searchBooks(@RequestParam String query) {
+<span class="fc" id="L70">        Map&lt;String, Object&gt; response = new HashMap&lt;&gt;();</span>
+        try {
+<span class="fc" id="L72">            List&lt;BookDTO&gt; books = bookService.searchBooks(query);</span>
+<span class="fc" id="L73">            response.put(&quot;success&quot;, true);</span>
+<span class="fc" id="L74">            response.put(&quot;data&quot;, books);</span>
+<span class="fc" id="L75">            return ResponseEntity.ok(response);</span>
+<span class="fc" id="L76">        } catch (Exception e) {</span>
+<span class="fc" id="L77">            System.out.println(&quot;搜索书籍失败: &quot; + e.getMessage());</span>
+<span class="fc" id="L78">            e.printStackTrace();</span>
+<span class="fc" id="L79">            response.put(&quot;success&quot;, false);</span>
+<span class="fc" id="L80">            response.put(&quot;message&quot;, &quot;搜索书籍失败：&quot; + e.getMessage());</span>
+<span class="fc" id="L81">            return ResponseEntity.ok(response);</span>
+        }
+    }
+} 
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

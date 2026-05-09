@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserAuthDaoImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ebookstore-backend</a> &gt; <a href="index.source.html" class="el_package">com.ebookstore.dao.impl</a> &gt; <span class="el_source">UserAuthDaoImpl.java</span></div><h1>UserAuthDaoImpl.java</h1><pre class="source lang-java linenums">package com.ebookstore.dao.impl;
+
+import com.ebookstore.dao.UserAuthDao;
+import com.ebookstore.entity.UserAuth;
+import com.ebookstore.repository.UserAuthRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
+
+/**
+ * 用户认证数据访问对象实现类
+ * 通过Spring依赖注入使用Repository
+ * 将repository注入到dao层 两个配合使用
+ */
+@Repository
+<span class="fc" id="L17">public class UserAuthDaoImpl implements UserAuthDao {</span>
+    
+    @Autowired
+    private UserAuthRepository userAuthRepository;//注入UserAuthRepository
+    
+    @Override
+    public Optional&lt;UserAuth&gt; findByUsername(String username) {
+<span class="fc" id="L24">        return userAuthRepository.findByUsername(username);</span>
+    }
+    
+    @Override
+    public UserAuth save(UserAuth userAuth) {
+<span class="fc" id="L29">        return userAuthRepository.save(userAuth);</span>
+    }
+    
+    @Override
+    public Optional&lt;UserAuth&gt; findById(Long id) {
+<span class="fc" id="L34">        return userAuthRepository.findById(id);</span>
+    }
+    
+    @Override
+    public Boolean existsByUsername(String username) {
+<span class="fc" id="L39">        return userAuthRepository.existsByUsername(username);</span>
+    }
+} 
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

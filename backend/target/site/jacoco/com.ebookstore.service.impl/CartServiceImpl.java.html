@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CartServiceImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ebookstore-backend</a> &gt; <a href="index.source.html" class="el_package">com.ebookstore.service.impl</a> &gt; <span class="el_source">CartServiceImpl.java</span></div><h1>CartServiceImpl.java</h1><pre class="source lang-java linenums">package com.ebookstore.service.impl;
+
+import com.ebookstore.dto.CartItemDTO;
+import com.ebookstore.entity.CartItem;
+import com.ebookstore.entity.User;
+import com.ebookstore.entity.Book;
+import com.ebookstore.repository.BookRepository;
+import com.ebookstore.repository.CartItemRepository;
+import com.ebookstore.service.CartService;
+import com.ebookstore.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import javax.persistence.EntityNotFoundException;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+/**
+ * 购物车服务实现类
+ */
+@Service
+<span class="fc" id="L24">public class CartServiceImpl implements CartService {//多个repository协同操作数据库</span>
+    
+    @Autowired
+    private CartItemRepository cartItemRepository;
+    
+    @Autowired
+    private BookRepository bookRepository;
+    
+    @Autowired
+    private UserService userService;
+    
+    @Override
+    public List&lt;CartItemDTO&gt; getCartItems() {
+<span class="fc" id="L37">        User user = userService.getCurrentUser();</span>
+<span class="fc bfc" id="L38" title="All 2 branches covered.">        if (user == null) {</span>
+<span class="fc" id="L39">            throw new SecurityException(&quot;用户未登录&quot;);</span>
+        }
+<span class="fc" id="L41">        return cartItemRepository.findByUser(user).stream()</span>
+<span class="fc" id="L42">                .map(this::convertToDTO)</span>
+<span class="fc" id="L43">                .collect(Collectors.toList());</span>
+    }
+    
+    @Override
+    @Transactional
+    public CartItemDTO addToCart(Long bookId, Integer quantity) {
+<span class="fc" id="L49">        User user = userService.getCurrentUser();</span>
+<span class="fc bfc" id="L50" title="All 2 branches covered.">        if (user == null) {</span>
+<span class="fc" id="L51">            throw new SecurityException(&quot;用户未登录&quot;);</span>
+        }
+        
+<span class="fc" id="L54">        Book book = bookRepository.findById(bookId)</span>
+<span class="fc" id="L55">                .orElseThrow(() -&gt; new EntityNotFoundException(&quot;书籍不存在&quot;));</span>
+        
+        // 查询购物车中是否已存在该商品
+<span class="fc" id="L58">        Optional&lt;CartItem&gt; existingItem = cartItemRepository.findByUserAndBookId(user, bookId);</span>
+        
+        CartItem cartItem;
+<span class="fc bfc" id="L61" title="All 2 branches covered.">        if (existingItem.isPresent()) {</span>
+            // 已存在则更新数量
+<span class="fc" id="L63">            cartItem = existingItem.get();</span>
+<span class="fc" id="L64">            cartItem.setQuantity(cartItem.getQuantity() + quantity);</span>
+        } else {
+            // 不存在则新增
+<span class="fc" id="L67">            cartItem = new CartItem();</span>
+<span class="fc" id="L68">            cartItem.setUser(user);</span>
+<span class="fc" id="L69">            cartItem.setBook(book);</span>
+<span class="fc" id="L70">            cartItem.setQuantity(quantity);</span>
+<span class="fc" id="L71">            cartItem.setSelected(false);</span>
+        }
+        
+<span class="fc" id="L74">        cartItem = cartItemRepository.save(cartItem);</span>
+<span class="fc" id="L75">        return convertToDTO(cartItem);</span>
+    }
+    
+    @Override
+    @Transactional
+    public void removeFromCart(Long itemId, Long userId) {
+<span class="fc" id="L81">        User user = userService.getCurrentUser();</span>
+<span class="pc bpc" id="L82" title="1 of 4 branches missed.">        if (user == null || !user.getId().equals(userId)) {</span>
+<span class="fc" id="L83">            throw new SecurityException(&quot;无权限操作&quot;);</span>
+        }
+        
+<span class="fc" id="L86">        CartItem cartItem = cartItemRepository.findById(itemId)</span>
+<span class="pc" id="L87">                .orElseThrow(() -&gt; new EntityNotFoundException(&quot;购物车项不存在&quot;));</span>
+        
+        // 验证该购物车项属于当前用户
+<span class="fc bfc" id="L90" title="All 2 branches covered.">        if (!cartItem.getUser().getId().equals(userId)) {</span>
+<span class="fc" id="L91">            throw new SecurityException(&quot;无权限操作该购物车项&quot;);</span>
+        }
+        
+<span class="fc" id="L94">        cartItemRepository.delete(cartItem);</span>
+<span class="fc" id="L95">    }</span>
+    
+    @Override
+    @Transactional
+    public void updateCartItemQuantity(Long itemId, Integer quantity, Long userId) {
+<span class="fc" id="L100">        User user = userService.getCurrentUser();</span>
+<span class="pc bpc" id="L101" title="1 of 4 branches missed.">        if (user == null || !user.getId().equals(userId)) {</span>
+<span class="fc" id="L102">            throw new SecurityException(&quot;无权限操作&quot;);</span>
+        }
+        
+<span class="fc" id="L105">        CartItem cartItem = cartItemRepository.findById(itemId)</span>
+<span class="pc" id="L106">                .orElseThrow(() -&gt; new EntityNotFoundException(&quot;购物车项不存在&quot;));</span>
+        
+        // 验证该购物车项属于当前用户
+<span class="fc bfc" id="L109" title="All 2 branches covered.">        if (!cartItem.getUser().getId().equals(userId)) {</span>
+<span class="fc" id="L110">            throw new SecurityException(&quot;无权限操作该购物车项&quot;);</span>
+        }
+        
+<span class="fc bfc" id="L113" title="All 2 branches covered.">        if (quantity &lt;= 0) {</span>
+<span class="fc" id="L114">            cartItemRepository.delete(cartItem);</span>
+        } else {
+<span class="fc" id="L116">            cartItem.setQuantity(quantity);</span>
+<span class="fc" id="L117">            cartItemRepository.save(cartItem);</span>
+        }
+<span class="fc" id="L119">    }</span>
+    
+    @Override
+    @Transactional
+    public void toggleCartItemSelection(Long cartItemId) {
+<span class="fc" id="L124">        User user = userService.getCurrentUser();</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">        if (user == null) {</span>
+<span class="fc" id="L126">            throw new SecurityException(&quot;用户未登录&quot;);</span>
+        }
+        
+<span class="fc" id="L129">        CartItem cartItem = cartItemRepository.findById(cartItemId)</span>
+<span class="pc" id="L130">                .orElseThrow(() -&gt; new EntityNotFoundException(&quot;购物车项不存在&quot;));</span>
+        
+        // 验证该购物车项属于当前用户
+<span class="fc bfc" id="L133" title="All 2 branches covered.">        if (!cartItem.getUser().getId().equals(user.getId())) {</span>
+<span class="fc" id="L134">            throw new SecurityException(&quot;无权限操作该购物车项&quot;);</span>
+        }
+        
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">        cartItem.setSelected(!cartItem.getSelected());</span>
+<span class="fc" id="L138">        cartItemRepository.save(cartItem);</span>
+<span class="fc" id="L139">    }</span>
+    
+    @Override
+    @Transactional
+    public int cleanCartByBookId(Long bookId) {
+<span class="fc bfc" id="L144" title="All 2 branches covered.">        if (bookId == null) {</span>
+<span class="fc" id="L145">            throw new IllegalArgumentException(&quot;书籍ID不能为空&quot;);</span>
+        }
+        
+        // 先查询要删除的购物车项数量，用于返回统计信息
+<span class="fc" id="L149">        List&lt;CartItem&gt; itemsToDelete = cartItemRepository.findByBookId(bookId);</span>
+<span class="fc" id="L150">        int deletedCount = itemsToDelete.size();</span>
+        
+        // 执行删除操作
+<span class="fc" id="L153">        cartItemRepository.deleteByBookId(bookId);</span>
+        
+<span class="fc" id="L155">        System.out.println(&quot;书籍ID &quot; + bookId + &quot; 软删除，已清理 &quot; + deletedCount + &quot; 个购物车项&quot;);</span>
+        
+<span class="fc" id="L157">        return deletedCount;</span>
+    }
+    
+    private CartItemDTO convertToDTO(CartItem cartItem) {
+        // 重新从数据库获取最新的书籍信息，确保库存数据是最新的
+<span class="fc" id="L162">        Book book = bookRepository.findById(cartItem.getBook().getId())</span>
+<span class="fc" id="L163">                .orElse(cartItem.getBook());</span>
+                
+<span class="fc" id="L165">        return new CartItemDTO(</span>
+<span class="fc" id="L166">                cartItem.getId(),</span>
+<span class="fc" id="L167">                book.getId(),</span>
+<span class="fc" id="L168">                book.getTitle(),</span>
+<span class="fc" id="L169">                book.getAuthor(),</span>
+<span class="fc" id="L170">                book.getPrice(),</span>
+<span class="fc" id="L171">                book.getCover(),</span>
+<span class="fc" id="L172">                book.getStatus(),</span>
+<span class="fc" id="L173">                book.getStock(),</span>
+<span class="fc" id="L174">                book.getIsbn(),</span>
+<span class="fc" id="L175">                cartItem.getQuantity(),</span>
+<span class="fc" id="L176">                cartItem.getSelected()</span>
+        );
+    }
+} 
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

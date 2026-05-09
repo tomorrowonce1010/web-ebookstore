@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AuthController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ebookstore-backend</a> &gt; <a href="index.source.html" class="el_package">com.ebookstore.controller</a> &gt; <span class="el_source">AuthController.java</span></div><h1>AuthController.java</h1><pre class="source lang-java linenums">package com.ebookstore.controller;
+
+import com.ebookstore.dto.*;
+import com.ebookstore.service.AuthService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import javax.servlet.http.HttpSession;
+import javax.validation.Valid;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * 认证控制器
+ * 处理用户登录、注册、登出等认证相关请求
+ */
+@RestController
+@RequestMapping(&quot;/api/auth&quot;)
+@CrossOrigin(origins = &quot;http://localhost:3000&quot;, allowCredentials = &quot;true&quot;)//跨域
+<span class="fc" id="L21">public class AuthController {</span>
+    
+    @Autowired
+    private AuthService authService;//依赖注入：自动注入AuthService实例 业务逻辑交给
+    
+    /**
+     * 用户登录
+     */
+    @PostMapping(&quot;/login&quot;)//处理发送到/login路径的POST请求
+    public ResponseEntity&lt;LoginResponseDTO&gt; login(@Valid @RequestBody LoginDTO loginDTO, //从请求体中解析出LoginDTO对象
+                                                HttpSession session) {//自动注入的http会话对象
+<span class="fc" id="L32">        LoginResponseDTO response = authService.login(loginDTO, session);//loginDTO包含了用户输入的用户名和密码，loginResponseDTO包含了登录结果</span>
+        
+        // 根据登录结果返回不同的HTTP状态码
+<span class="fc bfc" id="L35" title="All 2 branches covered.">        if (response.getSuccess()) {</span>
+<span class="fc" id="L36">            return ResponseEntity.ok(response);//登录成功返回200</span>
+        } else {
+<span class="fc" id="L38">            return ResponseEntity.ok(response);//登录失败仍然返回200，但在响应体中包含错误信息</span>
+        }
+    }
+    
+    /**
+     * 用户注册
+     */
+    @PostMapping(&quot;/register&quot;) 
+    public ResponseEntity&lt;LoginResponseDTO&gt; register(@Valid @RequestBody RegisterDTO registerDTO) {
+<span class="fc" id="L47">        LoginResponseDTO response = authService.register(registerDTO);</span>
+<span class="fc" id="L48">        return ResponseEntity.ok(response);</span>
+    }
+    
+    /**
+     * 用户登出
+     */
+    @PostMapping(&quot;/logout&quot;)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; logout(HttpSession session) {
+<span class="fc" id="L56">        authService.logout(session);</span>
+        
+<span class="fc" id="L58">        Map&lt;String, Object&gt; response = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L59">        response.put(&quot;success&quot;, true);</span>
+<span class="fc" id="L60">        response.put(&quot;message&quot;, &quot;登出成功&quot;);</span>
+        
+<span class="fc" id="L62">        return ResponseEntity.ok(response);</span>
+    }
+    
+    /**
+     * 检查登录状态
+     */
+    @GetMapping(&quot;/status&quot;)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; checkLoginStatus(HttpSession session) {
+<span class="fc" id="L70">        UserInfoDTO currentUser = authService.getCurrentUser(session);</span>
+        
+<span class="fc" id="L72">        Map&lt;String, Object&gt; response = new HashMap&lt;&gt;();</span>
+        
+<span class="fc bfc" id="L74" title="All 2 branches covered.">        if (currentUser != null) {</span>
+<span class="fc" id="L75">            response.put(&quot;isLoggedIn&quot;, true);</span>
+<span class="fc" id="L76">            response.put(&quot;userInfo&quot;, currentUser);</span>
+        } else {
+<span class="fc" id="L78">            response.put(&quot;isLoggedIn&quot;, false);</span>
+<span class="fc" id="L79">            response.put(&quot;userInfo&quot;, null);</span>
+        }
+        
+<span class="fc" id="L82">        return ResponseEntity.ok(response);</span>
+    }
+    
+    /**
+     * 获取当前用户信息
+     */
+    @GetMapping(&quot;/current-user&quot;)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; getCurrentUser(HttpSession session) {
+<span class="fc" id="L90">        UserInfoDTO currentUser = authService.getCurrentUser(session);</span>
+        
+<span class="fc" id="L92">        Map&lt;String, Object&gt; response = new HashMap&lt;&gt;();</span>
+        
+<span class="fc bfc" id="L94" title="All 2 branches covered.">        if (currentUser != null) {</span>
+<span class="fc" id="L95">            response.put(&quot;success&quot;, true);</span>
+<span class="fc" id="L96">            response.put(&quot;userInfo&quot;, currentUser);</span>
+        } else {
+<span class="fc" id="L98">            response.put(&quot;success&quot;, false);</span>
+<span class="fc" id="L99">            response.put(&quot;message&quot;, &quot;用户未登录&quot;);</span>
+        }
+        
+<span class="fc" id="L102">        return ResponseEntity.ok(response);</span>
+    }
+} 
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

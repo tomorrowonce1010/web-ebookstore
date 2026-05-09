@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserDaoImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ebookstore-backend</a> &gt; <a href="index.source.html" class="el_package">com.ebookstore.dao.impl</a> &gt; <span class="el_source">UserDaoImpl.java</span></div><h1>UserDaoImpl.java</h1><pre class="source lang-java linenums">package com.ebookstore.dao.impl;
+
+import com.ebookstore.dao.UserDao;
+import com.ebookstore.entity.User;
+import com.ebookstore.entity.UserAuth;
+import com.ebookstore.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
+
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+import javax.persistence.TypedQuery;
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * 用户数据访问对象实现类
+ * 通过Spring依赖注入使用Repository
+ */
+@Repository//标记为Spring的Repository组件
+<span class="fc" id="L21">public class UserDaoImpl implements UserDao {</span>
+    
+    @Autowired
+    private UserRepository userRepository;
+    
+    @PersistenceContext
+    private EntityManager entityManager;//实体管理器
+    
+    @Override
+    public Optional&lt;User&gt; findById(Long id) {
+<span class="fc" id="L31">        User user = entityManager.find(User.class, id);</span>
+<span class="fc" id="L32">        return Optional.ofNullable(user);</span>
+    }
+    
+    @Override
+    public Optional&lt;User&gt; findByEmail(String email) {
+<span class="fc" id="L37">        TypedQuery&lt;User&gt; query = entityManager.createQuery(</span>
+            &quot;SELECT u FROM User u WHERE u.email = :email&quot;, User.class);
+<span class="fc" id="L39">        query.setParameter(&quot;email&quot;, email);</span>
+        
+        try {
+<span class="fc" id="L42">            return Optional.of(query.getSingleResult());</span>
+<span class="fc" id="L43">        } catch (Exception e) {</span>
+<span class="fc" id="L44">            return Optional.empty();</span>
+        }
+    }
+    
+    @Override
+    public Optional&lt;User&gt; findByName(String name) {
+<span class="fc" id="L50">        return userRepository.findByName(name);</span>
+    }
+    
+    @Override
+    public User save(User user) {
+<span class="fc bfc" id="L55" title="All 2 branches covered.">        if (user.getId() == null) {</span>
+<span class="fc" id="L56">            entityManager.persist(user);</span>
+<span class="fc" id="L57">            return user;</span>
+        } else {
+<span class="fc" id="L59">            return entityManager.merge(user);</span>
+        }
+    }
+    
+    @Override
+    public void deleteById(Long id) {
+<span class="fc" id="L65">        userRepository.deleteById(id);</span>
+<span class="fc" id="L66">    }</span>
+    
+    @Override
+    public List&lt;User&gt; findAll() {
+<span class="fc" id="L70">        return userRepository.findAll();</span>
+    }
+    
+    @Override
+    public Boolean existsByEmail(String email) {
+<span class="fc" id="L75">        TypedQuery&lt;Long&gt; query = entityManager.createQuery(</span>
+            &quot;SELECT COUNT(u) FROM User u WHERE u.email = :email&quot;, Long.class);
+<span class="fc" id="L77">        query.setParameter(&quot;email&quot;, email);</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">        return query.getSingleResult() &gt; 0;</span>
+    }
+    
+    @Override
+    public Optional&lt;User&gt; findByUserAuth(UserAuth userAuth) {
+<span class="fc" id="L83">        TypedQuery&lt;User&gt; query = entityManager.createQuery(</span>
+            &quot;SELECT u FROM User u WHERE u.userAuth.id = :authId&quot;, User.class);
+<span class="fc" id="L85">        query.setParameter(&quot;authId&quot;, userAuth.getId());</span>
+        
+        try {
+<span class="fc" id="L88">            return Optional.of(query.getSingleResult());</span>
+<span class="fc" id="L89">        } catch (Exception e) {</span>
+<span class="fc" id="L90">            return Optional.empty();</span>
+        }
+    }
+} 
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

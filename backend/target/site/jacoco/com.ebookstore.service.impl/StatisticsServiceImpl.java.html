@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StatisticsServiceImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ebookstore-backend</a> &gt; <a href="index.source.html" class="el_package">com.ebookstore.service.impl</a> &gt; <span class="el_source">StatisticsServiceImpl.java</span></div><h1>StatisticsServiceImpl.java</h1><pre class="source lang-java linenums">package com.ebookstore.service.impl;
+
+import com.ebookstore.dto.BookSalesStatisticsDto;
+import com.ebookstore.dto.PersonalStatisticsDto;
+import com.ebookstore.dto.UserConsumptionStatisticsDto;
+import com.ebookstore.entity.Order;
+import com.ebookstore.entity.OrderItem;
+import com.ebookstore.repository.OrderRepository;
+import com.ebookstore.service.StatisticsService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
+
+/**
+ * 统计服务实现类
+ */
+@Service
+<span class="fc" id="L23">public class StatisticsServiceImpl implements StatisticsService {</span>
+    
+    @Autowired
+    private OrderRepository orderRepository;
+    
+    @Override
+    public List&lt;BookSalesStatisticsDto&gt; getBookSalesStatistics(LocalDateTime startDate, LocalDateTime endDate) {
+<span class="fc" id="L30">        System.out.println(&quot;=== StatisticsService.getBookSalesStatistics ===&quot;);</span>
+<span class="fc" id="L31">        System.out.println(&quot;查询时间范围: &quot; + startDate + &quot; 到 &quot; + endDate);</span>
+        
+        // 获取指定时间范围内的所有订单
+<span class="fc" id="L34">        List&lt;Order&gt; orders = orderRepository.findByOrderDateBetween(startDate, endDate);</span>
+<span class="pc bpc" id="L35" title="1 of 2 branches missed.">        System.out.println(&quot;查询到的订单数量: &quot; + (orders != null ? orders.size() : 0));</span>
+        
+<span class="pc bpc" id="L37" title="1 of 4 branches missed.">        if (orders != null &amp;&amp; !orders.isEmpty()) {</span>
+<span class="fc" id="L38">            System.out.println(&quot;订单详情:&quot;);</span>
+<span class="fc bfc" id="L39" title="All 2 branches covered.">            for (int i = 0; i &lt; Math.min(orders.size(), 3); i++) {</span>
+<span class="fc" id="L40">                Order order = orders.get(i);</span>
+<span class="fc" id="L41">                System.out.println(&quot;  订单&quot; + (i+1) + &quot;: ID=&quot; + order.getId() + </span>
+<span class="fc" id="L42">                                 &quot;, 用户=&quot; + order.getUser().getName() + </span>
+<span class="fc" id="L43">                                 &quot;, 日期=&quot; + order.getOrderDate() + </span>
+<span class="fc" id="L44">                                 &quot;, 金额=&quot; + order.getTotalAmount() +</span>
+<span class="pc bpc" id="L45" title="1 of 2 branches missed.">                                 &quot;, 商品数=&quot; + (order.getOrderItems() != null ? order.getOrderItems().size() : 0));</span>
+            }
+        }
+        
+        // 统计每本书的销量和销售额
+<span class="fc" id="L50">        Map&lt;Long, BookSalesStatisticsDto&gt; bookStatisticsMap = new HashMap&lt;&gt;();</span>
+        
+<span class="fc bfc" id="L52" title="All 2 branches covered.">        for (Order order : orders) {</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">            for (OrderItem item : order.getOrderItems()) {</span>
+<span class="fc" id="L54">                Long bookId = item.getBook().getId();</span>
+                
+<span class="fc" id="L56">                BookSalesStatisticsDto dto = bookStatisticsMap.computeIfAbsent(bookId, k -&gt; {</span>
+<span class="fc" id="L57">                    BookSalesStatisticsDto newDto = new BookSalesStatisticsDto();</span>
+<span class="fc" id="L58">                    newDto.setBookId(bookId);</span>
+<span class="fc" id="L59">                    newDto.setBookTitle(item.getBook().getTitle());</span>
+<span class="fc" id="L60">                    newDto.setAuthor(item.getBook().getAuthor());</span>
+<span class="fc" id="L61">                    newDto.setCover(item.getBook().getCover());</span>
+<span class="fc" id="L62">                    newDto.setTotalSales(0L);</span>
+<span class="fc" id="L63">                    newDto.setTotalRevenue(BigDecimal.ZERO);</span>
+<span class="fc" id="L64">                    return newDto;</span>
+                });
+                
+                // 累计销量和销售额
+<span class="fc" id="L68">                dto.setTotalSales(dto.getTotalSales() + item.getQuantity());</span>
+<span class="fc" id="L69">                dto.setTotalRevenue(dto.getTotalRevenue().add(item.getSubtotal()));</span>
+<span class="fc" id="L70">            }</span>
+<span class="fc" id="L71">        }</span>
+        
+        // 计算平均价格并排序
+        //peek:观察操作，不改变流的元素，用于调试和日志记录
+<span class="fc" id="L75">        List&lt;BookSalesStatisticsDto&gt; result = bookStatisticsMap.values().stream()</span>
+<span class="fc" id="L76">                .peek(dto -&gt; {</span>
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">                    if (dto.getTotalSales() &gt; 0) {</span>
+<span class="fc" id="L78">                        dto.setAveragePrice(dto.getTotalRevenue().divide(</span>
+<span class="fc" id="L79">                                BigDecimal.valueOf(dto.getTotalSales()), 2, RoundingMode.HALF_UP));</span>
+                    } else {
+<span class="nc" id="L81">                        dto.setAveragePrice(BigDecimal.ZERO);</span>
+                    }
+<span class="fc" id="L83">                })</span>
+<span class="fc" id="L84">                .sorted((a, b) -&gt; b.getTotalSales().compareTo(a.getTotalSales())) // 按销量降序</span>
+<span class="fc" id="L85">                .collect(Collectors.toList());</span>
+        
+<span class="fc" id="L87">        return result;</span>
+    }
+    
+    @Override
+    public List&lt;UserConsumptionStatisticsDto&gt; getUserConsumptionStatistics(LocalDateTime startDate, LocalDateTime endDate) {
+        // 获取指定时间范围内的所有订单
+<span class="fc" id="L93">        List&lt;Order&gt; orders = orderRepository.findByOrderDateBetween(startDate, endDate);</span>
+        
+        // 统计每个用户的消费情况
+<span class="fc" id="L96">        Map&lt;Long, UserConsumptionStatisticsDto&gt; userStatisticsMap = new HashMap&lt;&gt;();</span>
+        
+<span class="fc bfc" id="L98" title="All 2 branches covered.">        for (Order order : orders) {</span>
+<span class="fc" id="L99">            Long userId = order.getUser().getId();</span>
+            
+<span class="fc" id="L101">            UserConsumptionStatisticsDto dto = userStatisticsMap.computeIfAbsent(userId, k -&gt; {</span>
+<span class="fc" id="L102">                UserConsumptionStatisticsDto newDto = new UserConsumptionStatisticsDto();</span>
+<span class="fc" id="L103">                newDto.setUserId(userId);</span>
+<span class="fc" id="L104">                newDto.setUserName(order.getUser().getName());</span>
+<span class="fc" id="L105">                newDto.setEmail(order.getUser().getEmail());</span>
+<span class="fc" id="L106">                newDto.setTotalOrders(0L);</span>
+<span class="fc" id="L107">                newDto.setTotalBooks(0L);</span>
+<span class="fc" id="L108">                newDto.setTotalConsumption(BigDecimal.ZERO);</span>
+<span class="fc" id="L109">                return newDto;</span>
+            });
+            
+            // 累计订单数和消费金额
+<span class="fc" id="L113">            dto.setTotalOrders(dto.getTotalOrders() + 1);//每个订单加1</span>
+<span class="fc" id="L114">            dto.setTotalConsumption(dto.getTotalConsumption().add(order.getTotalAmount()));</span>
+            
+            // 累计购书数量
+<span class="fc" id="L117">            long orderBookCount = order.getOrderItems().stream()</span>
+<span class="fc" id="L118">                    .mapToLong(OrderItem::getQuantity)</span>
+<span class="fc" id="L119">                    .sum();</span>
+<span class="fc" id="L120">            dto.setTotalBooks(dto.getTotalBooks() + orderBookCount);</span>
+<span class="fc" id="L121">        }</span>
+        
+        // 计算平均订单价值并排序
+<span class="fc" id="L124">        List&lt;UserConsumptionStatisticsDto&gt; result = userStatisticsMap.values().stream()</span>
+<span class="fc" id="L125">                .peek(dto -&gt; {</span>
+                    //检查用户的订单拿书是否大于0
+<span class="pc bpc" id="L127" title="1 of 2 branches missed.">                    if (dto.getTotalOrders() &gt; 0) {</span>
+                        //计算平均订单价值
+<span class="fc" id="L129">                        dto.setAverageOrderValue(dto.getTotalConsumption().divide(</span>
+<span class="fc" id="L130">                                BigDecimal.valueOf(dto.getTotalOrders()), 2, RoundingMode.HALF_UP));</span>
+                    } else {
+<span class="nc" id="L132">                        dto.setAverageOrderValue(BigDecimal.ZERO);</span>
+                    }
+<span class="fc" id="L134">                })</span>
+                //排序：按总消费金额降序
+<span class="fc" id="L136">                .sorted((a, b) -&gt; b.getTotalConsumption().compareTo(a.getTotalConsumption()))</span>
+                //将流收集为List
+<span class="fc" id="L138">                .collect(Collectors.toList());</span>
+        
+<span class="fc" id="L140">        return result;</span>
+    }
+    
+    @Override
+    public PersonalStatisticsDto getPersonalStatistics(Long userId, LocalDateTime startDate, LocalDateTime endDate) {
+        // 获取指定用户在指定时间范围内的所有订单
+<span class="fc" id="L146">        List&lt;Order&gt; orders = orderRepository.findByUserIdAndOrderDateBetween(userId, startDate, endDate);</span>
+        
+<span class="fc" id="L148">        PersonalStatisticsDto result = new PersonalStatisticsDto();</span>
+<span class="fc" id="L149">        result.setTotalOrders((long) orders.size());</span>
+<span class="fc" id="L150">        result.setTotalBooks(0L);</span>
+<span class="fc" id="L151">        result.setTotalAmount(BigDecimal.ZERO);</span>
+        
+        // 统计每本书的购买情况
+<span class="fc" id="L154">        Map&lt;Long, PersonalStatisticsDto.BookPurchaseDto&gt; bookPurchaseMap = new HashMap&lt;&gt;();</span>
+        
+<span class="fc bfc" id="L156" title="All 2 branches covered.">        for (Order order : orders) {</span>
+<span class="fc" id="L157">            result.setTotalAmount(result.getTotalAmount().add(order.getTotalAmount()));</span>
+            
+<span class="fc bfc" id="L159" title="All 2 branches covered.">            for (OrderItem item : order.getOrderItems()) {</span>
+<span class="fc" id="L160">                Long bookId = item.getBook().getId();</span>
+                
+<span class="fc" id="L162">                PersonalStatisticsDto.BookPurchaseDto bookDto = bookPurchaseMap.computeIfAbsent(bookId, k -&gt; {</span>
+<span class="fc" id="L163">                    PersonalStatisticsDto.BookPurchaseDto newDto = new PersonalStatisticsDto.BookPurchaseDto();</span>
+<span class="fc" id="L164">                    newDto.setBookId(bookId);</span>
+<span class="fc" id="L165">                    newDto.setBookTitle(item.getBook().getTitle());</span>
+<span class="fc" id="L166">                    newDto.setAuthor(item.getBook().getAuthor());</span>
+<span class="fc" id="L167">                    newDto.setCover(item.getBook().getCover());</span>
+<span class="fc" id="L168">                    newDto.setQuantity(0L);</span>
+<span class="fc" id="L169">                    newDto.setTotalAmount(BigDecimal.ZERO);</span>
+<span class="fc" id="L170">                    return newDto;</span>
+                });
+                
+                // 累计该书的购买数量和金额
+<span class="fc" id="L174">                bookDto.setQuantity(bookDto.getQuantity() + item.getQuantity());</span>
+<span class="fc" id="L175">                bookDto.setTotalAmount(bookDto.getTotalAmount().add(item.getSubtotal()));</span>
+                
+                // 累计总购书数量
+<span class="fc" id="L178">                result.setTotalBooks(result.getTotalBooks() + item.getQuantity());</span>
+<span class="fc" id="L179">            }</span>
+<span class="fc" id="L180">        }</span>
+        
+        // 计算每本书的平均购买价格
+<span class="fc" id="L183">        List&lt;PersonalStatisticsDto.BookPurchaseDto&gt; bookDetails = bookPurchaseMap.values().stream()</span>
+<span class="fc" id="L184">                .peek(dto -&gt; {</span>
+<span class="pc bpc" id="L185" title="1 of 2 branches missed.">                    if (dto.getQuantity() &gt; 0) {</span>
+<span class="fc" id="L186">                        dto.setAveragePrice(dto.getTotalAmount().divide(</span>
+<span class="fc" id="L187">                                BigDecimal.valueOf(dto.getQuantity()), 2, RoundingMode.HALF_UP));</span>
+                    } else {
+<span class="nc" id="L189">                        dto.setAveragePrice(BigDecimal.ZERO);</span>
+                    }
+<span class="fc" id="L191">                })</span>
+<span class="fc" id="L192">                .sorted((a, b) -&gt; b.getQuantity().compareTo(a.getQuantity())) // 按购买数量降序</span>
+<span class="fc" id="L193">                .collect(Collectors.toList());</span>
+        
+<span class="fc" id="L195">        result.setBookDetails(bookDetails);</span>
+        
+<span class="fc" id="L197">        return result;</span>
+    }
+} 
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
